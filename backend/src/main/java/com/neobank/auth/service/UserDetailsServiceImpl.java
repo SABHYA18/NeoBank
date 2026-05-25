@@ -1,26 +1,11 @@
 package com.neobank.auth.service;
 
-import com.neobank.auth.model.UserPrincipal;
-import com.neobank.auth.repository.UserRepository;
-import lombok.RequiredArgsConstructor;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
-import org.springframework.stereotype.Service;
-
 /**
- * Loads a UserPrincipal by email for Spring Security authentication.
+ * @deprecated Moved to {@link impl.UserDetailsServiceImpl}
+ * This file is intentionally left empty to avoid duplicate class conflicts.
+ * The actual implementation lives in com.neobank.auth.service.impl.UserDetailsServiceImpl
  */
-@Service
-@RequiredArgsConstructor
-public class UserDetailsServiceImpl implements UserDetailsService {
-
-    private final UserRepository userRepository;
-
-    @Override
-    public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
-        return userRepository.findByEmail(email)
-                .map(UserPrincipal::new)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found with email: " + email));
-    }
+@Deprecated
+class UserDetailsServiceImplOld {
+    // Intentionally empty — superseded by impl.UserDetailsServiceImpl
 }

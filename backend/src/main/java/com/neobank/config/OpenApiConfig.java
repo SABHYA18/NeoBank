@@ -33,7 +33,7 @@ import org.springframework.context.annotation.Configuration;
                 """,
         contact = @Contact(name = "NeoBank Dev Team")
     ),
-    servers = @Server(url = "http://localhost:8080", description = "Local Development"),
+    servers = @Server(url = "http://localhost:8081", description = "Local Development"),
     security = @SecurityRequirement(name = "bearerAuth")
 )
 @SecurityScheme(
