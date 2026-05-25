@@ -1,0 +1,202 @@
+# NeoBank Super-App — Implementation Plan
+
+A full-stack banking super-app built in Java (Spring Boot) with a modern frontend.
+PayFlow (P2P wallet) and ClearLedger (expense tracking) are embedded as child modules.
+
+---
+
+## Architecture Overview
+
+```
+NeoBank (Parent)
+├── 🔐 Auth Module          → Login, Signup, JWT, Roles
+├── 👤 User Module          → Profile, KYC, Settings
+├── 🏦 Core Banking Module  → Accounts, Balances, Statements
+├── 💳 Transactions Module  → Deposits, Withdrawals, Transfers
+├── 💸 PayFlow Module       → P2P Payments, Requests, QR
+└── 📊 ClearLedger Module   → Expenses, Budgets, Invoices
+```
+
+We'll build this as a **modular monolith** — one Spring Boot app with clean internal module boundaries.
+Later, each module can be extracted into its own microservice if needed.
+
+---
+
+## Tech Stack
+
+| Layer | Technology |
+|---|---|
+| **Language** | Java 21 |
+| **Framework** | Spring Boot 3.x |
+| **Security** | Spring Security + JWT (JJWT) |
+| **ORM** | Spring Data JPA + Hibernate |
+| **Local DB** | H2 (in-memory, dev) |
+| **Cloud DB** | Supabase (PostgreSQL) |
+| **Build Tool** | Maven |
+| **Frontend** | React + Vite (TypeScript) |
+| **API Style** | REST API |
+| **Docs** | Swagger / OpenAPI 3 |
+
+---
+
+## Project Structure
+
+```
+neobank/
+├── backend/                         ← Spring Boot App
+│   └── src/main/java/com/neobank/
+│       ├── NeoBackApplication.java
+│       ├── config/                  ← Security, CORS, Swagger
+│       ├── common/                  ← Shared DTOs, exceptions, utils
+│       ├── auth/                    ← Auth module
+│       │   ├── controller/
+│       │   ├── service/
+│       │   ├── model/
+│       │   └── dto/
+│       ├── user/                    ← User module
+│       ├── banking/                 ← Core banking module
+│       │   ├── account/
+│       │   └── transaction/
+│       ├── payflow/                 ← P2P wallet module
+│       └── clearledger/             ← Expense/budget module
+│
+└── frontend/                        ← React + Vite App
+    ├── src/
+    │   ├── pages/
+    │   │   ├── auth/                ← Login, Signup
+    │   │   ├── dashboard/           ← Main dashboard
+    │   │   ├── accounts/
+    │   │   ├── transactions/
+    │   │   ├── payflow/
+    │   │   └── clearledger/
+    │   ├── components/
+    │   ├── services/                ← API calls
+    │   └── store/                   ← State management
+    └── ...
+```
+
+---
+
+## Build Phases
+
+### ✅ Phase 1 — Core Backend (Start Here)
+> Build the skeleton + auth + core banking
+
+- [ ] Spring Boot project setup (Maven, dependencies)
+- [ ] H2 local database configuration
+- [ ] User entity + repository
+- [ ] Auth module: `POST /auth/signup`, `POST /auth/login`
+- [ ] JWT generation, validation, refresh tokens
+- [ ] Spring Security filter chain
+- [ ] Role-based access: `CUSTOMER`, `ADMIN`
+- [ ] Account entity (checking, savings)
+- [ ] `POST /accounts` — create account
+- [ ] `GET /accounts/{id}` — get account details
+- [ ] `GET /accounts/{id}/balance` — get balance
+
+### Phase 2 — Transactions
+- [ ] Transaction entity (ledger-based: debit/credit entries)
+- [ ] `POST /transactions/deposit`
+- [ ] `POST /transactions/withdraw`
+- [ ] `POST /transactions/transfer`
+- [ ] Transaction history with filters (date, type, amount)
+- [ ] Idempotency keys to prevent duplicate transactions
+- [ ] Balance validation & rollback on failure
+
+### Phase 3 — PayFlow Module
+- [ ] PayFlow wallet (linked to user account)
+- [ ] `POST /payflow/send` — send money by username/email
+- [ ] `POST /payflow/request` — request money from a user
+- [ ] `GET /payflow/feed` — activity feed
+- [ ] Accept/decline payment requests
+- [ ] QR code generation for payments
+
+### Phase 4 — ClearLedger Module
+- [ ] Expense categories (food, travel, utilities, etc.)
+- [ ] `POST /clearledger/expenses` — log an expense
+- [ ] `GET /clearledger/expenses` — list with filters
+- [ ] Budget setup per category
+- [ ] Group expenses (split with other users)
+- [ ] Spending analytics endpoint
+
+### Phase 5 — Frontend
+- [ ] React + Vite setup with TypeScript
+- [ ] Auth pages (Login, Signup)
+- [ ] Dashboard (balances, recent transactions)
+- [ ] Accounts page
+- [ ] Transaction history table
+- [ ] PayFlow UI (send/request money)
+- [ ] ClearLedger UI (expense tracker, budgets)
+
+### Phase 6 — Cloud & Polish
+- [ ] Switch from H2 to Supabase (PostgreSQL)
+- [ ] Environment-based config (`dev` vs `prod` profiles)
+- [ ] Swagger/OpenAPI docs
+- [ ] Error handling & validation
+- [ ] Rate limiting
+
+---
+
+## Database Schema (Core Tables)
+
+```sql
+-- Users
+users (id, email, username, password_hash, full_name, role, created_at)
+
+-- Accounts
+accounts (id, user_id, account_number, type[CHECKING/SAVINGS], status, created_at)
+
+-- Ledger (double-entry accounting)
+ledger_entries (id, account_id, transaction_id, type[DEBIT/CREDIT], amount, balance_after, created_at)
+
+-- Transactions
+transactions (id, from_account_id, to_account_id, amount, type, status, reference, description, created_at)
+
+-- PayFlow
+payflow_requests (id, from_user_id, to_user_id, amount, status[PENDING/ACCEPTED/DECLINED], note, created_at)
+
+-- ClearLedger
+expenses (id, user_id, amount, category, description, date, created_at)
+budgets (id, user_id, category, limit_amount, period[MONTHLY/WEEKLY], created_at)
+```
+
+---
+
+## Key Design Decisions
+
+### 1. Double-Entry Ledger
+Every transaction creates **two ledger entries** (debit + credit).
+This ensures balance consistency and makes auditing easy.
+
+### 2. Idempotency
+Every transaction requires a unique `idempotencyKey` to prevent duplicate charges if an API call is retried.
+
+### 3. Optimistic Locking
+Account balances use `@Version` (JPA optimistic locking) to prevent race conditions in concurrent transfers.
+
+### 4. JWT Strategy
+- **Access token**: 15 min expiry
+- **Refresh token**: 7 days, stored in DB
+- Token rotation on refresh
+
+---
+
+## Open Questions for You
+
+> [!IMPORTANT]
+> Please review these decisions before we start coding:
+
+1. **Frontend framework**: React + Vite (TypeScript) recommended — agree?
+2. **Admin panel**: Should there be an admin role that can view all users & transactions?
+3. **Supabase setup**: Do you already have a Supabase project, or should we start with H2 only and connect Supabase later?
+4. **Currency**: Single currency (e.g., USD/INR) for now, or multi-currency from the start?
+5. **Notifications**: Email notifications for transactions, or skip for now?
+
+---
+
+## Where We Start
+
+**Phase 1, Step 1**: Create the Spring Boot Maven project at:
+`C:\Users\lenovo\.gemini\antigravity-ide\scratch\neobank\backend`
+
+Then immediately implement Auth + Core Banking.
