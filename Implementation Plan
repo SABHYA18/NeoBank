@@ -103,13 +103,20 @@ neobank/
 - [ ] Idempotency keys to prevent duplicate transactions
 - [ ] Balance validation & rollback on failure
 
-### Phase 3 — PayFlow Module
+### Phase 3 — PayFlow Module & Generic Wallet Strategy Framework
 - [ ] PayFlow wallet (linked to user account)
 - [ ] `POST /payflow/send` — send money by username/email
 - [ ] `POST /payflow/request` — request money from a user
 - [ ] `GET /payflow/feed` — activity feed
 - [ ] Accept/decline payment requests
 - [ ] QR code generation for payments
+- [ ] Generic Wallet Strategy Framework skeleton (`WalletStrategy`, `WalletStrategyFactory`, `WalletStrategyContext`)
+- [ ] Concrete strategies for wallet money usage:
+  - `BookingWalletStrategy` (for airline, movie, or transportation bookings)
+  - `BillPaymentWalletStrategy` (for electricity, water, internet bill payments)
+  - `RechargeWalletStrategy` (for mobile or network operator recharges)
+- [ ] `POST /payflow/pay` — unified endpoint to make any wallet payment/service usage using the strategy framework
+- [ ] `GET /payflow/payments` — list wallet transaction/payment history
 
 ### Phase 4 — ClearLedger Module
 - [ ] Expense categories (food, travel, utilities, etc.)
@@ -119,14 +126,16 @@ neobank/
 - [ ] Group expenses (split with other users)
 - [ ] Spending analytics endpoint
 
-### Phase 5 — Frontend
-- [ ] React + Vite setup with TypeScript
+### Phase 5 — Frontend (Strictly Minimalist)
+- [ ] React + Vite setup with TypeScript (clean typography, generous whitespace)
 - [ ] Auth pages (Login, Signup)
 - [ ] Dashboard (balances, recent transactions)
 - [ ] Accounts page
 - [ ] Transaction history table
-- [ ] PayFlow UI (send/request money)
+- [ ] PayFlow UI (Dynamic wallet section showing Send, Request, QR, and dedicated Booking/Bills/Recharges portals built on a unified payment interface)
 - [ ] ClearLedger UI (expense tracker, budgets)
+> [!NOTE]
+> **Minimalist Design Principle**: All UI pages, components, and views must adopt a strictly clean, premium, and minimal design. Use a high-contrast neutral palette (e.g., slate/charcoal tones, soft off-whites), modern premium sans-serif typography (e.g., Inter/Outfit), subtle micro-animations, and generous whitespace, avoiding loud or generic gradients and colors.
 
 ### Phase 6 — Cloud & Polish
 - [ ] Switch from H2 to Supabase (PostgreSQL)
@@ -154,6 +163,7 @@ transactions (id, from_account_id, to_account_id, amount, type, status, referenc
 
 -- PayFlow
 payflow_requests (id, from_user_id, to_user_id, amount, status[PENDING/ACCEPTED/DECLINED], note, created_at)
+payflow_payments (id, user_id, type[BOOKING/BILL/RECHARGE], amount, status[PENDING/CONFIRMED/FAILED], reference_number, metadata_json, created_at)
 
 -- ClearLedger
 expenses (id, user_id, amount, category, description, date, created_at)
@@ -178,6 +188,15 @@ Account balances use `@Version` (JPA optimistic locking) to prevent race conditi
 - **Access token**: 15 min expiry
 - **Refresh token**: 7 days, stored in DB
 - Token rotation on refresh
+
+### 5. Generic Wallet Strategy Framework
+To ensure that wallet money/credit can be used for any third-party transaction or service (bookings, bills, recharges, etc.) without coupling core wallet logic with vendor implementations, we establish a **Generic Wallet Strategy Framework**.
+1. `WalletStrategy`: The generic interface defining:
+   - `validate(WalletPaymentRequest request)`: Validates payment parameters (e.g. check biller code, seat availability, active status).
+   - `execute(WalletPaymentRequest request)`: Connects to mock external services and processes the specific transaction.
+2. `WalletStrategyFactory`: Resolves the appropriate strategy class dynamically based on the payment `type`.
+3. `payflow_payments` table: Stores the payment record with a generic `metadata_json` column containing type-specific details (e.g. flight number for airline, operator code for recharges).
+This highly scalable architecture allows the wallet section of the application to support new debit use-cases in the future by simply implementing a new `WalletStrategy` subclass.
 
 ---
 

@@ -1,0 +1,261 @@
+{
+    "info": {
+        "_postman_id": "neobank-superapp-collection-uuid",
+        "name": "NeoBank Super-App API Reference",
+        "description": "Chronological API Reference collection for the NeoBank Super-App ecosystem.",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "item": [
+        {
+            "name": "\ud83d\udd10 1. Authentication Layer",
+            "item": [
+                {
+                    "name": "Sign Up / Register",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"email\": \"customer@neobank.com\",\n  \"username\": \"customer_neobank\",\n  \"password\": \"Password123!\",\n  \"fullName\": \"Jane Doe\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/v1/auth/signup",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "auth",
+                                "signup"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Log In / Authenticate",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "var jsonData = pm.response.json();",
+                                    "if (jsonData.success && jsonData.data && jsonData.data.accessToken) {",
+                                    "    pm.environment.set(\"accessToken\", jsonData.data.accessToken);",
+                                    "}"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"email\": \"customer@neobank.com\",\n  \"password\": \"Password123!\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/v1/auth/login",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "auth",
+                                "login"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "\ud83c\udfe6 2. Account Management Layer",
+            "item": [
+                {
+                    "name": "Open a New Account",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"type\": \"CHECKING\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/v1/accounts",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "accounts"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "List My Accounts",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{baseUrl}}/api/v1/accounts",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "accounts"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "\ud83d\udcb3 3. Core Transactions & Ledger Layer",
+            "item": [
+                {
+                    "name": "Deposit Funds",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "X-Idempotency-Key",
+                                "value": "dep-idem-key-001"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"accountId\": \"acc-uuid-1234\",\n  \"amount\": 10000.0,\n  \"description\": \"Initial account deposit\",\n  \"idempotencyKey\": \"dep-idem-key-001\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/v1/transactions/deposit",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "transactions",
+                                "deposit"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Peer-to-Peer Transfer",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "X-Idempotency-Key",
+                                "value": "trans-idem-key-001"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"fromAccountId\": \"acc-uuid-1234\",\n  \"toAccountNumber\": \"0987654321\",\n  \"amount\": 2500.0,\n  \"description\": \"Rent payment\",\n  \"idempotencyKey\": \"trans-idem-key-001\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/v1/transactions/transfer",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "transactions",
+                                "transfer"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "\ud83d\udcb8 4. PayFlow Wallet Layer",
+            "item": [
+                {
+                    "name": "Execute Smart Payment",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "X-Idempotency-Key",
+                                "value": "payflow-idem-key-001"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"walletId\": \"wallet-uuid-5555\",\n  \"type\": \"BILL\",\n  \"amount\": 1250.0,\n  \"metadata\": {\n    \"billerId\": \"ELECTRIC-MSEB-02\",\n    \"consumerNumber\": \"9876543210\"\n  },\n  \"idempotencyKey\": \"payflow-idem-key-001\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/v1/payflow/pay",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "payflow",
+                                "pay"
+                            ]
+                        }
+                    }
+                }
+            ]
+        }
+    ],
+    "auth": {
+        "type": "bearer",
+        "bearer": [
+            {
+                "key": "token",
+                "value": "{{accessToken}}",
+                "type": "string"
+            }
+        ]
+    },
+    "variable": [
+        {
+            "key": "baseUrl",
+            "value": "https://api.neobank-superapp.local",
+            "type": "string"
+        },
+        {
+            "key": "accessToken",
+            "value": "your_jwt_access_token",
+            "type": "string"
+        }
+    ]
+}
