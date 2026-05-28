@@ -66,4 +66,13 @@ public class AccountController {
         balanceInfo.put("currency", account.getCurrency());
         return ResponseEntity.ok(ApiResponse.success("Balance retrieved.", balanceInfo));
     }
+
+    @PutMapping("/{id}/balance")
+    @Operation(summary = "Manually update account balance", description = "Sets the account balance directly for testing/simulation purposes")
+    public ResponseEntity<ApiResponse<AccountDto>> updateBalance(
+            @PathVariable String id,
+            @RequestParam java.math.BigDecimal balance) {
+        AccountDto account = accountService.updateBalance(id, balance);
+        return ResponseEntity.ok(ApiResponse.success("Account balance updated successfully.", account));
+    }
 }

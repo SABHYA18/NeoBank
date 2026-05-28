@@ -1,16 +1,16 @@
 {
     "info": {
-        "_postman_id": "neobank-superapp-collection-uuid",
-        "name": "NeoBank Super-App API Reference",
-        "description": "Chronological API Reference collection for the NeoBank Super-App ecosystem.",
+        "_postman_id": "neobank-superapp-architecture-spec-v3",
+        "name": "NeoBank Super-App Architecture & Operational Reference",
+        "description": "API Reference mappings detailing the full Backend Spring Boot Monolith interfaces and the React SPA token handshake rules.",
         "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
     },
     "item": [
         {
-            "name": "\ud83d\udd10 1. Authentication Layer",
+            "name": "\ud83d\udd10 1. Security & Authentication Layer",
             "item": [
                 {
-                    "name": "Sign Up / Register",
+                    "name": "Sign Up / Register User",
                     "request": {
                         "method": "POST",
                         "header": [
@@ -21,7 +21,7 @@
                         ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\n  \"email\": \"customer@neobank.com\",\n  \"username\": \"customer_neobank\",\n  \"password\": \"Password123!\",\n  \"fullName\": \"Jane Doe\"\n}"
+                            "raw": "{\n  \"email\": \"customer@neobank.com\",\n  \"username\": \"jane_doe\",\n  \"password\": \"Password123!\",\n  \"fullName\": \"Jane Doe\"\n}"
                         },
                         "url": {
                             "raw": "{{baseUrl}}/api/v1/auth/signup",
@@ -34,11 +34,12 @@
                                 "auth",
                                 "signup"
                             ]
-                        }
+                        },
+                        "description": "Registers the default credentials automatically during the Frontend 'Live Mode' zero-configuration handshake switch."
                     }
                 },
                 {
-                    "name": "Log In / Authenticate",
+                    "name": "Log In / Token Handshake",
                     "event": [
                         {
                             "listen": "test",
@@ -47,8 +48,10 @@
                                     "var jsonData = pm.response.json();",
                                     "if (jsonData.success && jsonData.data && jsonData.data.accessToken) {",
                                     "    pm.environment.set(\"accessToken\", jsonData.data.accessToken);",
+                                    "    pm.environment.set(\"refreshToken\", jsonData.data.refreshToken);",
                                     "}"
-                                ]
+                                ],
+                                "type": "text/javascript"
                             }
                         }
                     ],
@@ -62,7 +65,7 @@
                         ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\n  \"email\": \"customer@neobank.com\",\n  \"password\": \"Password123!\"\n}"
+                            "raw": "{\n  \"username\": \"jane_doe\",\n  \"password\": \"Password123!\"\n}"
                         },
                         "url": {
                             "raw": "{{baseUrl}}/api/v1/auth/login",
@@ -75,16 +78,17 @@
                                 "auth",
                                 "login"
                             ]
-                        }
+                        },
+                        "description": "Authenticates credentials and returns the stateless JJWT token. Binds the extracted Authorization header globally across the SPA runtime state."
                     }
                 }
             ]
         },
         {
-            "name": "\ud83c\udfe6 2. Account Management Layer",
+            "name": "\ud83c\udfe6 2. Core Banking & Double-Entry Ledger Subsystem",
             "item": [
                 {
-                    "name": "Open a New Account",
+                    "name": "Open Financial Instrument",
                     "request": {
                         "method": "POST",
                         "header": [
@@ -107,33 +111,12 @@
                                 "v1",
                                 "accounts"
                             ]
-                        }
+                        },
+                        "description": "Creates a CHECKING/SAVINGS record. Balances are calculated dynamically using database aggregates of running audit columns."
                     }
                 },
                 {
-                    "name": "List My Accounts",
-                    "request": {
-                        "method": "GET",
-                        "url": {
-                            "raw": "{{baseUrl}}/api/v1/accounts",
-                            "host": [
-                                "{{baseUrl}}"
-                            ],
-                            "path": [
-                                "api",
-                                "v1",
-                                "accounts"
-                            ]
-                        }
-                    }
-                }
-            ]
-        },
-        {
-            "name": "\ud83d\udcb3 3. Core Transactions & Ledger Layer",
-            "item": [
-                {
-                    "name": "Deposit Funds",
+                    "name": "Deposit Funds (Idempotent Top-Up)",
                     "request": {
                         "method": "POST",
                         "header": [
@@ -143,12 +126,12 @@
                             },
                             {
                                 "key": "X-Idempotency-Key",
-                                "value": "dep-idem-key-001"
+                                "value": "dep-idem-key-999"
                             }
                         ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\n  \"accountId\": \"acc-uuid-1234\",\n  \"amount\": 10000.0,\n  \"description\": \"Initial account deposit\",\n  \"idempotencyKey\": \"dep-idem-key-001\"\n}"
+                            "raw": "{\n  \"accountId\": \"acc-uuid-1234\",\n  \"amount\": 10000.0,\n  \"description\": \"Initial account deposit\",\n  \"idempotencyKey\": \"dep-idem-key-999\"\n}"
                         },
                         "url": {
                             "raw": "{{baseUrl}}/api/v1/transactions/deposit",
@@ -161,11 +144,12 @@
                                 "transactions",
                                 "deposit"
                             ]
-                        }
+                        },
+                        "description": "Simulates a load sequence. Intercepted by the backend Idempotency Filter to guarantee safety during execution drop retries."
                     }
                 },
                 {
-                    "name": "Peer-to-Peer Transfer",
+                    "name": "Atomic Account-to-Account Transfer",
                     "request": {
                         "method": "POST",
                         "header": [
@@ -175,12 +159,12 @@
                             },
                             {
                                 "key": "X-Idempotency-Key",
-                                "value": "trans-idem-key-001"
+                                "value": "trans-idem-key-999"
                             }
                         ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\n  \"fromAccountId\": \"acc-uuid-1234\",\n  \"toAccountNumber\": \"0987654321\",\n  \"amount\": 2500.0,\n  \"description\": \"Rent payment\",\n  \"idempotencyKey\": \"trans-idem-key-001\"\n}"
+                            "raw": "{\n  \"fromAccountId\": \"acc-uuid-1234\",\n  \"toAccountNumber\": \"0987654321\",\n  \"amount\": 2000.0,\n  \"description\": \"Internal P2P Balance Shift\",\n  \"idempotencyKey\": \"trans-idem-key-999\"\n}"
                         },
                         "url": {
                             "raw": "{{baseUrl}}/api/v1/transactions/transfer",
@@ -193,34 +177,21 @@
                                 "transactions",
                                 "transfer"
                             ]
-                        }
+                        },
+                        "description": "Performs double-entry isolation changes. Implements Hibernate @Version annotations to throw failure events if matching balances shift concurrently."
                     }
                 }
             ]
         },
         {
-            "name": "\ud83d\udcb8 4. PayFlow Wallet Layer",
+            "name": "\ud83d\udcb8 3. PayFlow Core Wallet Subsystem",
             "item": [
                 {
-                    "name": "Execute Smart Payment",
+                    "name": "Fetch Wallet Details",
                     "request": {
-                        "method": "POST",
-                        "header": [
-                            {
-                                "key": "Content-Type",
-                                "value": "application/json"
-                            },
-                            {
-                                "key": "X-Idempotency-Key",
-                                "value": "payflow-idem-key-001"
-                            }
-                        ],
-                        "body": {
-                            "mode": "raw",
-                            "raw": "{\n  \"walletId\": \"wallet-uuid-5555\",\n  \"type\": \"BILL\",\n  \"amount\": 1250.0,\n  \"metadata\": {\n    \"billerId\": \"ELECTRIC-MSEB-02\",\n    \"consumerNumber\": \"9876543210\"\n  },\n  \"idempotencyKey\": \"payflow-idem-key-001\"\n}"
-                        },
+                        "method": "GET",
                         "url": {
-                            "raw": "{{baseUrl}}/api/v1/payflow/pay",
+                            "raw": "{{baseUrl}}/api/v1/payflow/wallet",
                             "host": [
                                 "{{baseUrl}}"
                             ],
@@ -228,9 +199,95 @@
                                 "api",
                                 "v1",
                                 "payflow",
-                                "pay"
+                                "wallet"
                             ]
-                        }
+                        },
+                        "description": "Returns wallet status configurations. Throws a 404 block if an active single ledger binding profile doesn't exist."
+                    }
+                },
+                {
+                    "name": "Initialize Core Wallet (1k Floor Constraint)",
+                    "request": {
+                        "method": "POST",
+                        "url": {
+                            "raw": "{{baseUrl}}/api/v1/payflow/wallet/initialize?accountId=acc-uuid-1234&initialAmount=1500.00",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "payflow",
+                                "wallet",
+                                "initialize"
+                            ],
+                            "query": [
+                                {
+                                    "key": "accountId",
+                                    "value": "acc-uuid-1234"
+                                },
+                                {
+                                    "key": "initialAmount",
+                                    "value": "1500.00"
+                                }
+                            ]
+                        },
+                        "description": "Permanently links a single checking account to the profile. Enforces an absolute minimum load constraint of >= 1,000 INR."
+                    }
+                },
+                {
+                    "name": "Wallet Pull Balance Recharge",
+                    "request": {
+                        "method": "POST",
+                        "url": {
+                            "raw": "{{baseUrl}}/api/v1/payflow/wallet/recharge?amount=2000.00",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "payflow",
+                                "wallet",
+                                "recharge"
+                            ],
+                            "query": [
+                                {
+                                    "key": "amount",
+                                    "value": "2000.00"
+                                }
+                            ]
+                        },
+                        "description": "Withdraws currency items straight from the locked checking account link to increase wallet assets."
+                    }
+                },
+                {
+                    "name": "Send Instantly (Enforces 1k Minimum Limit)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"toUsername\": \"bobby_32\",\n  \"amount\": 500.0,\n  \"note\": \"Dinner Split\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/v1/payflow/send",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "payflow",
+                                "send"
+                            ]
+                        },
+                        "description": "Shifts assets inside isolated payflow partitions. Rejects request with a 400 bad payload block if the remaining sender balance falls below 1,000 INR."
                     }
                 }
             ]
@@ -249,12 +306,17 @@
     "variable": [
         {
             "key": "baseUrl",
-            "value": "https://api.neobank-superapp.local",
+            "value": "http://localhost:8081",
             "type": "string"
         },
         {
             "key": "accessToken",
-            "value": "your_jwt_access_token",
+            "value": "handshake_jwt_placeholder",
+            "type": "string"
+        },
+        {
+            "key": "refreshToken",
+            "value": "handshake_refresh_placeholder",
             "type": "string"
         }
     ]

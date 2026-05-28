@@ -47,7 +47,7 @@ public class TransactionController {
         return ResponseEntity.ok(ApiResponse.success("Transfer completed successfully.", response));
     }
 
-    @GetMapping
+    @GetMapping("/transaction-history")
     @Operation(summary = "Get transaction history for the authenticated user", description = "Returns a paginated list of all deposits, withdrawals, and transfers")
     public ResponseEntity<ApiResponse<Page<TransactionResponse>>> getMyTransactionHistory(
             @RequestParam(defaultValue = "0") int page,

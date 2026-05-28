@@ -1,63 +1,185 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>NeoBank Super-App API Contract Reference</title>
+    <title>NeoBank Super-App Technical API Specification</title>
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; line-height: 1.6; color: #333; max-width: 900px; margin: 40px auto; padding: 0 20px; }
-        h1 { color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px; }
-        h2 { color: #2980b9; margin-top: 40px; border-left: 4px solid #3498db; padding-left: 10px; }
-        .endpoint { background: #f8f9fa; border: 1px solid #eaeded; padding: 15px; border-radius: 5px; margin-bottom: 20px; }
-        .method { display: inline-block; padding: 3px 8px; font-weight: bold; color: #fff; border-radius: 3px; font-size: 12px; margin-right: 10px; }
-        .post { background: #2ecc71; }
-        .get { background: #3498db; }
-        .path { font-family: monospace; font-size: 14px; font-weight: bold; color: #2c3e50; }
-        .meta { margin-bottom: 30px; background: #ebf5fb; padding: 15px; border-radius: 5px; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; color: #2c3e50; max-width: 1000px; margin: 40px auto; padding: 0 20px; background: #fafbfc; }
+        h1 { color: #1a252f; border-bottom: 3px solid #3498db; padding-bottom: 12px; font-size: 28px; }
+        h2 { color: #2c3e50; margin-top: 45px; border-left: 5px solid #3498db; padding-left: 12px; font-size: 20px; border-bottom: 1px solid #eadedd; padding-bottom: 5px; }
+        h3 { color: #34495e; font-size: 15px; margin-bottom: 8px; margin-top: 20px; }
+        p { margin: 8px 0; }
+        .meta-box { background: #ebf5fb; padding: 20px; border-radius: 6px; border: 1px solid #d4e6f1; margin-bottom: 35px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+        .meta-box code { background: #fff; padding: 2px 6px; border-radius: 4px; border: 1px solid #bcd; font-family: monospace; }
+        .endpoint { background: #ffffff; border: 1px solid #e2e8f0; padding: 20px; border-radius: 6px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.02); }
+        .endpoint-header { display: flex; align-items: center; margin-bottom: 10px; }
+        .method { display: inline-block; padding: 4px 10px; font-weight: bold; color: #fff; border-radius: 4px; font-size: 12px; font-family: monospace; text-transform: uppercase; margin-right: 12px; }
+        .method.post { background: #2ecc71; }
+        .method.get { background: #3498db; }
+        .path { font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace; font-size: 15px; font-weight: 700; color: #1a252f; }
+        .desc { color: #555; font-size: 14.5px; margin-bottom: 15px; }
+        pre { background: #1e272e; color: #f5f6fa; padding: 15px; border-radius: 5px; font-family: "Courier New", Courier, monospace; font-size: 13px; overflow-x: auto; margin: 10px 0; }
+        @media print {
+            body { background: #fff; margin: 0; max-width: 100%; }
+            .endpoint { page-break-inside: avoid; border: 1px solid #ccc; }
+            h2 { page-break-after: avoid; }
+        }
     </style>
 </head>
 <body>
-    <h1>NeoBank Super-App API Contract Reference</h1>
-    <p><strong>System Topology Release:</strong> 1.0.4-RELEASE</p>
+
+    <h1>NeoBank Super-App — Technical API Document</h1>
+    <p><strong>System Engine Release Baseline:</strong> 1.0.4-RELEASE</p>
     
-    <div class="meta">
-        <strong>Global Base URL:</strong> <code>https://api.neobank-superapp.local</code><br>
-        <strong>Authentication Scheme:</strong> JSON Web Token (JJWT Bearer Standard Validation Header)
+    <div class="meta-box">
+        <strong>Global Context Base URL:</strong> <code>https://api.neobank-superapp.local</code><br>
+        <strong>Authorization Security Pattern:</strong> Standard JSON Web Token (JJWT Bearer Scheme attached via <code>Authorization</code> header)<br>
+        <strong>Database Mutative Safeguard:</strong> Optimistic Version checking locks combined with explicit unique transactional tracking keys.
     </div>
 
-    <h2>🔐 1. Authentication Layer (Public)</h2>
+    <h2>🔐 1. Authentication Layer (Public Endpoints)</h2>
+    
     <div class="endpoint">
-        <span class="method post">POST</span><span class="path">/api/v1/auth/signup</span>
-        <p>Registers a brand new customer user entity within the persistent system security context mapping tables.</p>
-    </div>
-    <div class="endpoint">
-        <span class="method post">POST</span><span class="path">/api/v1/auth/login</span>
-        <p>Validates account credentials and issues signed runtime authentication tokens.</p>
-    </div>
-
-    <h2>🏦 2. Account Management Layer (Authenticated)</h2>
-    <div class="endpoint">
-        <span class="method post">POST</span><span class="path">/api/v1/accounts</span>
-        <p>Provisions a new core CHECKING or SAVINGS banking element linked directly to the client context profile.</p>
-    </div>
-    <div class="endpoint">
-        <span class="method get">GET</span><span class="path">/api/v1/accounts</span>
-        <p>Returns a summary list of all financial ledger balances held by the authorized user session.</p>
+        <div class="endpoint-header">
+            <span class="method post">POST</span><span class="path">/api/v1/auth/signup</span>
+        </div>
+        <div class="desc">Registers a brand new operational profile entity within the security identity relational datastore framework.</div>
+        <h3>Example Request Payload</h3>
+<pre>{
+  "email": "customer@neobank.com",
+  "username": "customer_neobank",
+  "password": "Password123!",
+  "fullName": "Jane Doe"
+}</pre>
     </div>
 
-    <h2>💳 3. Core Transactions & System Ledger</h2>
     <div class="endpoint">
-        <span class="method post">POST</span><span class="path">/api/v1/transactions/deposit</span>
-        <p>Executes an atomic balance top-up event. Enforces idempotency via payload tracking tokens.</p>
-    </div>
-    <div class="endpoint">
-        <span class="method post">POST</span><span class="path">/api/v1/transactions/transfer</span>
-        <p>Performs a reliable, atomic, double-entry asset shift sequence across regional checking target mappings.</p>
+        <div class="endpoint-header">
+            <span class="method post">POST</span><span class="path">/api/v1/auth/login</span>
+        </div>
+        <div class="desc">Authenticates customer credentials and assigns short-lived access JWT arrays alongside durable refresh signature records.</div>
+        <h3>Example Response (200 OK)</h3>
+<pre>{
+  "success": true,
+  "message": "Authentication successful.",
+  "data": {
+    "accessToken": "eyJhbGciOi...",
+    "refreshToken": "d7bca81d...",
+    "username": "customer_neobank",
+    "email": "customer@neobank.com",
+    "role": "CUSTOMER"
+  }
+}</pre>
     </div>
 
-    <h2>💸 4. PayFlow Polymorphic Wallet</h2>
+    <h2>🏦 2. Account Management Layer (JWT Required)</h2>
+
     <div class="endpoint">
-        <span class="method post">POST</span><span class="path">/api/v1/payflow/pay</span>
-        <p>Dynamically routes third-party vendor requests (BILL, BOOKING, RECHARGE) through injected internal runtime strategies using a loose coupling factory pattern layout.</p>
+        <div class="endpoint-header">
+            <span class="method post">POST</span><span class="path">/api/v1/accounts</span>
+        </div>
+        <div class="desc">Instantiates a new <code>CHECKING</code> or <code>SAVINGS</code> internal ledger accounting partition context initialized with an isolated zero base balance.</div>
+        <h3>Example Request Payload</h3>
+<pre>{
+  "type": "CHECKING"
+}</pre>
     </div>
+
+    <div class="endpoint">
+        <div class="endpoint-header">
+            <span class="method get">GET</span><span class="path">/api/v1/accounts</span>
+        </div>
+        <div class="desc">Retrieves arrays detailing all core functional balance instruments owned by the active validated caller session signature.</div>
+    </div>
+
+    <h2>💳 3. Core Transactions & Double-Entry Ledger Layer</h2>
+
+    <div class="endpoint">
+        <div class="endpoint-header">
+            <span class="method post">POST</span><span class="path">/api/v1/transactions/deposit</span>
+        </div>
+        <div class="desc">Executes an atomic balance top-up event. Strictly handles server retries using the tracking value supplied via <code>X-Idempotency-Key</code> header arrays.</div>
+    </div>
+
+    <div class="endpoint">
+        <div class="endpoint-header">
+            <span class="method post">POST</span><span class="path">/api/v1/transactions/transfer</span>
+        </div>
+        <div class="desc">Performs a reliable, atomic, double-entry bookkeeping balance adjustment moving funds between two valid target numbers.</div>
+        <h3>Example Request Payload</h3>
+<pre>{
+  "fromAccountId": "acc-uuid-1234",
+  "toAccountNumber": "0987654321",
+  "amount": 2500.00,
+  "description": "Rent payment",
+  "idempotencyKey": "trans-idem-key-001"
+}</pre>
+    </div>
+
+    <h2>💸 4. PayFlow Core Wallet Layer (JWT Required)</h2>
+
+    <div class="endpoint">
+        <div class="endpoint-header">
+            <span class="method get">GET</span><span class="path">/api/v1/payflow/wallet</span>
+        </div>
+        <div class="desc">Fetches profile configurations for the authenticated wallet. Returns <code>404 Not Found</code> if the wallet profile hasn't been instantiated yet.</div>
+    </div>
+
+    <div class="endpoint">
+        <div class="endpoint-header">
+            <span class="method post">POST</span><span class="path">/api/v1/payflow/wallet/initialize</span>
+        </div>
+        <div class="desc">Permanently binds a banking resource instrument UUID path and seeds the wallet with cash resources. <strong>Constraint rule:</strong> Minimum base deposit amount must equal or exceed ₹1,000.00.</div>
+        <p><strong>Query Parameters:</strong> <code>accountId</code> (String), <code>initialAmount</code> (Decimal)</p>
+    </div>
+
+    <div class="endpoint">
+        <div class="endpoint-header">
+            <span class="method post">POST</span><span class="path">/api/v1/payflow/wallet/recharge</span>
+        </div>
+        <div class="desc">Pulls cash items straight from the mapped banking core interface account to bump current wallet resources.</div>
+        <p><strong>Query Parameters:</strong> <code>amount</code> (Decimal)</p>
+    </div>
+
+    <div class="endpoint">
+        <div class="endpoint-header">
+            <span class="method post">POST</span><span class="path">/api/v1/payflow/send</span>
+        </div>
+        <div class="desc">Performs immediate cross-wallet user transfers. <strong>Validation rule:</strong> Request drops with an exception payload if sender wallet values drop below a structural ₹1,000.00 ceiling limit.</div>
+        <h3>Example Request Payload</h3>
+<pre>{
+  "toUsername": "bobby_32",
+  "amount": 400.00,
+  "note": "Lunch share"
+}</pre>
+    </div>
+
+    <div class="endpoint">
+        <div class="endpoint-header">
+            <span class="method post">POST</span><span class="path">/api/v1/payflow/request</span>
+        </div>
+        <div class="desc">Saves an asymmetric pending accounting record requesting cash adjustments from another targeted username in the cluster.</div>
+        <h3>Example Request Payload</h3>
+<pre>{
+  "fromUsername": "alice_w",
+  "amount": 500.00,
+  "note": "Movie ticket split"
+}</pre>
+    </div>
+
+    <div class="endpoint">
+        <div class="endpoint-header">
+            <span class="method post">POST</span><span class="path">/api/v1/payflow/requests/{id}/accept</span>
+        </div>
+        <div class="desc">Approves the incoming billing request item. Instantly debits current wallet resources (verifying the structural ₹1,000.00 floor remains safe) and credits the requester.</div>
+    </div>
+
+    <div class="endpoint">
+        <div class="endpoint-header">
+            <span class="method post">POST</span><span class="path">/api/v1/payflow/requests/{id}/decline</span>
+        </div>
+        <div class="desc">Cancels, drops, and marks a pending inbound billing tracking item payload as <code>DECLINED</code>.</div>
+    </div>
+
 </body>
 </html>

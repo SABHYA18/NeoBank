@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>NeoBank Super-App — Technical Architecture & Operational Guide</title>
+    <style>
+        :root {
+            --bg-main: #fafbfc;
+            --text-primary: #1a252f;
+            --text-secondary: #4a5568;
+            --accent-blue: #3498db;
+            --border-color: rgba(226, 232, 240, 0.8);
+            --code-bg: #1e272e;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            line-height: 1.625;
+            color: var(--text-primary);
+            max-width: 1040px;
+            margin: 40px auto;
+            padding: 0 24px;
+            background: var(--bg-main);
+            -webkit-font-smoothing: antialiased;
+        }
+        h1 {
+            font-size: 30px;
+            font-weight: 800;
+            color: #111827;
+            border-bottom: 3px solid var(--accent-blue);
+            padding-bottom: 14px;
+            letter-spacing: -0.5px;
+            margin-bottom: 30px;
+        }
+        h2 {
+            font-size: 21px;
+            font-weight: 700;
+            color: #1f2937;
+            margin-top: 45px;
+            border-left: 5px solid var(--accent-blue);
+            padding-left: 14px;
+            margin-bottom: 20px;
+        }
+        h3 {
+            font-size: 15px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #4b5563;
+            margin-top: 24px;
+            margin-bottom: 8px;
+        }
+        p {
+            color: var(--text-secondary);
+            margin: 10px 0 16px 0;
+            font-size: 15px;
+        }
+        ul {
+            padding-left: 20px;
+            margin: 10px 0;
+        }
+        li {
+            color: var(--text-secondary);
+            font-size: 14.5px;
+            margin-bottom: 8px;
+        }
+        strong {
+            color: #111827;
+        }
+        .module-block {
+            background: #ffffff;
+            border: 1px solid var(--border-color);
+            padding: 24px;
+            border-radius: 8px;
+            margin-bottom: 24px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.01), 0 2px 4px -1px rgba(0, 0, 0, 0.01);
+        }
+        .badge {
+            background: #eef2f6;
+            color: #475569;
+            padding: 2px 8px;
+            font-size: 12px;
+            font-weight: 600;
+            font-family: monospace;
+            border-radius: 4px;
+            border: 1px solid #cbd5e1;
+        }
+        .highlight-box {
+            background: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            color: #166534;
+            padding: 14px 18px;
+            border-radius: 6px;
+            font-size: 14px;
+            margin: 15px 0;
+        }
+        .highlight-box.error-rule {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #991b1b;
+        }
+        pre {
+            background: var(--code-bg);
+            color: #f5f6fa;
+            padding: 16px;
+            border-radius: 6px;
+            font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+            font-size: 13.5px;
+            overflow-x: auto;
+            margin: 14px 0;
+        }
+        .ascii-art {
+            background: #f8fafc;
+            color: #334155;
+            border: 1px solid #e2e8f0;
+            font-weight: bold;
+        }
+        @media print {
+            body { background: #fff; margin: 0; max-width: 100%; }
+            .module-block { page-break-inside: avoid; border: 1px solid #cbd5e1; }
+        }
+    </style>
+</head>
+<body>
+
+    <h1>NeoBank Super-App — Technical Architecture & Operational Guide</h1>
+    <p>This technical architectural whitepaper outlines the systematic design decisions, internal framework operations, and constraints mapping out the NeoBank Super-App platform ecosystem.</p>
+
+    <h2>🏦 Part 1: The Backend (Spring Boot Monolith)</h2>
+    <p>The core layer is packaged as a high-performance <strong>Modular Monolith</strong> running on <strong>Java 21</strong> and <strong>Spring Boot 3.x</strong> architecture, enforcing rigid isolation interfaces between discrete business boundaries.</p>
+
+    <div class="module-block">
+        <h3>Architecture Context Map</h3>
+        <pre class="ascii-art">                  [ COM.NEOBANK ]
+                        │
+      ┌──────────────────┼──────────────────┐
+      ▼                  ▼                  ▼
+  🔐 [AUTH]          🏦 [BANKING]       💸 [PAYFLOW]
+  Identity & JWT    Accounts & Ledger   Wallet & P2P</pre>
+    </div>
+
+    <div class="module-block">
+        <h3>1. Security & Authentication Layer <span class="badge">com.neobank.auth</span></h3>
+        <p><strong>Stateless JJWT Authentication:</strong> Identity confirmation utilizes completely stateless processing structures. Upon successful validation of credentials, the server engine yields a JSON Web Token (JWT) stamped using SHA cryptographic key rules. The customer interface attaches this record inside the <code>Authorization: Bearer &lt;token&gt;</code> call headers for subsequent validation sweeps.</p>
+        <p><strong>Spring Security Filters:</strong> A custom filter element named <code>JwtAuthFilter</code> screens each inbound packet, decrypts token payloads, ensures validation windows remain open, and populates the <code>UserPrincipal</code> model context inside Spring's active <code>SecurityContextHolder</code> matrix.</p>
+    </div>
+
+    <div class="module-block">
+        <h3>2. Core Banking & Ledger Subsystem <span class="badge">com.neobank.banking</span></h3>
+        <p><strong>Double-Entry Ledger Accounting:</strong> System auditing guarantees immutable accounting entries. Financial adjustments are computed dynamically by pulling aggregations directly out of the <code>ledger_entries</code> ledger history tables. Individual balances are never modified as raw, mutable column fields.</p>
+        <p><strong>Idempotency Safeguard Filters:</strong> Prevent duplication vulnerabilities triggered by connection retries by enforcing strict verification parameters based on incoming client-supplied <code>idempotencyKey</code> strings. Duplicate requests match previous logs in the database and return cached tracking blocks instantly.</p>
+        <p><strong>JPA Optimistic Concurrency Locking:</strong> The account structural entity model uses an internal <code>@Version</code> concurrency counter field. Concurrent write collisions cause Hibernate to issue an <code>ObjectOptimisticLockingFailureException</code> error event, which prompts immediate rollback sequences to maintain systemic isolation ceilings.</p>
+    </div>
+
+    <div class="module-block">
+        <h3>3. PayFlow Core Wallet & P2P Subsystem <span class="badge">com.neobank.payflow</span></h3>
+        <p><strong>Immutable Single Wallet Relationship:</strong> Each distinct profile domain mapping is limited to exactly one digital wallet container entity. During initial setup calls via <code>POST /api/v1/payflow/wallet/initialize</code>, the target client permanently attaches an operational bank account link preference. This structural mapping cannot be altered or re-bound later.</p>
+        
+        <div class="highlight-box">
+            <strong>The ₹1,000 (1k) Floor Safety Limit Mechanics:</strong><br>
+            • <strong>Activation Ceiling:</strong> Setup initialization sequences require pulling a base startup resource deposit sizing equal to or exceeding <strong>₹1,000.00</strong> straight from the connected banking instrument.<br>
+            • <strong>Floor Constraints:</strong> Core wallet table check limits prevent internal balances from slipping beneath the absolute <strong>₹1,000.00</strong> minimum floor during peer shifts or request settlements.
+        </div>
+        
+        <p><strong>Isolated Balances & Pull Recharges:</strong> System database scopes remain completely isolated. The wallet model touches base with core banking records only during structured recharge procedures triggered at <code>POST /api/v1/payflow/wallet/recharge</code>. Pure peer-to-peer (P2P) transfers operate inside isolated <code>payflow_wallets</code> schemas.</p>
+    </div>
+
+    <h2>🎨 Part 2: The Frontend (React + TS + Tailwind v4)</h2>
+    <p>The presentation ecosystem is designed as an optimized Single Page Application utilizing <strong>Vite 5</strong> compiler engines, <strong>React 18</strong> framework rules, <strong>TypeScript</strong> code structures, and styled via **Tailwind CSS v4** layout sheets.</p>
+
+    <div class="module-block">
+        <h3>1. Aesthetic Design System <span class="badge">index.css</span></h3>
+        <p><strong>Apple-Inspired Typography & Spacing:</strong> Embeds the modern, clean <code>Outfit</code> typeface featuring micro-thin layout weights, extra character spacing tracking metrics, and sharp visual grid borders mapped at <code>border-[0.5px] border-zinc-200/60</code>.</p>
+        <p><strong>Micro-Animations & Visual Anchors:</strong> Content modules elevate cleanly via <code>hover:-translate-y-0.5</code> physics rules while rendering subtle background box glow shadows. Alert prompts slide onto screens from the left margin, nesting at the <strong>top-left corner</strong> (<code>fixed top-6 left-6 z-[99999]</code>) using dark contrast plates to preserve crisp layer separation guidelines over lower visual structures.</p>
+    </div>
+
+    <div class="module-block">
+        <h3>2. Unified Workspace Portals <span class="badge">App.tsx</span></h3>
+        <ul>
+            <li><strong>Overview Portal Dashboard:</strong> Renders complete aggregate valuation metrics using thin style typography weights coupled with real-time reactive card components showing linked check assets. Features inline tools to generate new operational accounts easily.</li>
+            <li><strong>Transactions Workspace:</strong> Forms handling cash inflows, cash points execution, and inside asset splits. Outputs a live code block mapping the current client-side generated <strong>Idempotency key context tracker</strong>.</li>
+            <li><strong>Ledger Workspace Audit Logs:</strong> Clean structural accounting sheets tabulating double-entry logs, compiling clear credit/debit transaction paths, execution reference codes, and updated balance metrics.</li>
+            <li><strong>PayFlow Wallet Workspace Portal:</strong> Renders an animated virtual card component displaying balance configurations, user strings, and connected ledger pathways. Handles linking workflows (enforcing the base ₹1,000 activation parameters), instant peer transfers, and provides an actionable requests activity dashboard panel.</li>
+        </ul>
+    </div>
+
+    <div class="module-block">
+        <h3>3. Automated Security Token Handshake Sequence</h3>
+        <p>Toggling the **"Live Mode"** control switch widget triggers an immediate operational profile migration from localized state simulations to the active backend runtime processing on <strong>port 8081</strong>. This zero-configuration automated pipeline runs the following background sequence sequence:</p>
+        <pre>
+1. POST /api/v1/auth/signup  --> Registers default credentials (jane_doe / Password123!)
+2. POST /api/v1/auth/login   --> Secures signed stateless JJWT accessToken string
+3. State Interception Hook  --> Saves bearer token in state and appends Authorization headers
+4. System Refresh            --> Synchronizes all operational account values instantly from the database</pre>
+    </div>
+
+</body>
+</html>

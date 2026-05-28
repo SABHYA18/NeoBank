@@ -1,6 +1,6 @@
-package com.neobank.banking.transaction.model;
+package com.neobank.payflow.model;
 
-import com.neobank.banking.account.model.Account;
+import com.neobank.auth.model.User;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -8,13 +8,13 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "ledger_entries")
+@Table(name = "payflow_requests")
 @Getter
 @Setter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class LedgerEntry {
+public class PayFlowRequest {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -22,22 +22,23 @@ public class LedgerEntry {
     private String id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "account_id", nullable = false)
-    private Account account;
+    @JoinColumn(name = "from_user_id", nullable = false)
+    private User fromUser;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "transaction_id", nullable = false)
-    private Transaction transaction;
-
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private LedgerEntryType type;
+    @JoinColumn(name = "to_user_id", nullable = false)
+    private User toUser;
 
     @Column(nullable = false, precision = 15, scale = 2)
     private BigDecimal amount;
 
-    @Column(nullable = false, precision = 15, scale = 2)
-    private BigDecimal balanceAfter;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    @Builder.Default
+    private RequestStatus status = RequestStatus.PENDING;
+
+    @Column(nullable = false)
+    private String note;
 
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;

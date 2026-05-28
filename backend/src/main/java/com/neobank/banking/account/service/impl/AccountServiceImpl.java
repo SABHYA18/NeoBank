@@ -44,6 +44,17 @@ public class AccountServiceImpl implements AccountService {
     public AccountDto createAccount(CreateAccountRequest request) {
         User currentUser = getCurrentUser();
 
+        // Enforce maximum 2 accounts rule: Checking and Savings only, and max 1 of each type
+        List<Account> existingAccounts = accountRepository.findByUserId(currentUser.getId());
+        if (existingAccounts.size() >= 2) {
+            throw new AppException("User has reached the maximum limit of 2 banking accounts.", HttpStatus.BAD_REQUEST);
+        }
+        boolean hasSameType = existingAccounts.stream()
+                .anyMatch(acc -> acc.getType() == request.getType());
+        if (hasSameType) {
+            throw new AppException("User already has a " + request.getType() + " account. Only one account of each type is permitted.", HttpStatus.BAD_REQUEST);
+        }
+
         // Generate unique 10-digit account number with collision retry
         String accountNumber;
         int attempts = 0;
@@ -148,6 +159,25 @@ public class AccountServiceImpl implements AccountService {
                 .currency(account.getCurrency())
                 .createdAt(account.getCreatedAt())
                 .build();
+    }
+
+    @Override
+    @Transactional
+    public AccountDto updateBalance(String accountId, BigDecimal newBalance) {
+        User currentUser = getCurrentUser();
+        Account account = findAccountById(accountId);
+
+        // Enforce ownership check
+        if (!account.getUser().getId().equals(currentUser.getId())) {
+            throw new AppException("You do not have access to this account.", HttpStatus.FORBIDDEN);
+        }
+
+        account.setBalance(newBalance.add(account.getBalance()));
+        account = accountRepository.save(account);
+        log.info("Manually set balance of account [{}] to {} for user: {}", 
+                account.getAccountNumber(), newBalance, currentUser.getEmail());
+
+        return mapToDto(account);
     }
 
     // ─── Auth Helper ──────────────────────────────────────────────

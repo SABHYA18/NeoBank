@@ -54,4 +54,9 @@ public interface AccountService {
      * Throws AppException if the account balance is less than the required amount.
      */
     void validateSufficientBalance(Account account, BigDecimal amount);
+
+    /**
+     * Updates the balance of an account directly — enforces ownership check.
+     */
+    AccountDto updateBalance(String accountId, BigDecimal newBalance);
 }

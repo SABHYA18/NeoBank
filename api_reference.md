@@ -82,10 +82,20 @@ sequenceDiagram
     Ledger->>Ledger: Write DEBIT on Sender + Write CREDIT on Recipient
     Ledger-->>Customer: Transfer Successful DTO
 
-    Customer->>Wallet: POST /api/v1/payflow/pay (Type = BILL, Utility payment)
-    Wallet->>Wallet: Resolve BillPaymentStrategy
-    Wallet->>Wallet: Validate biller & debit wallet balance
-    Wallet-->>Customer: Utility Bill Paid DTO (Reference generated)
+    Customer->>Wallet: POST /api/v1/payflow/wallet/initialize (Link checking account + deposit ₹1,500)
+    Note right of Wallet: Withdraw ₹1,500 from core checking account
+    Wallet->>Wallet: Initialize wallet with ₹1,500 balance (must be >= 1k)
+    Wallet-->>Customer: Wallet Activated DTO
+
+    Customer->>Wallet: POST /api/v1/payflow/wallet/recharge (amount = ₹2,000)
+    Note right of Wallet: Withdraw ₹2,000 from connected checking account
+    Wallet->>Wallet: Credit wallet balance (+₹2,000)
+    Wallet-->>Customer: Wallet Recharged DTO
+
+    Customer->>Wallet: POST /api/v1/payflow/send (Send ₹500 P2P to Recipient)
+    Note right of Wallet: Balance check: Sender balance stays >= 1k
+    Wallet->>Wallet: Debit Sender Wallet ₹500 & Credit Recipient Wallet ₹500
+    Wallet-->>Customer: Transfer completed successfully
 ```
 
 ---
@@ -335,3 +345,184 @@ Here is the list of REST APIs in the exact order a client/frontend application c
     }
   }
   ```
+
+---
+
+### 💸 4. PayFlow Core Wallet Layer (Authenticated: JWT Required)
+
+#### A. Get Wallet Details
+* **Endpoint**: `GET /api/v1/payflow/wallet`
+* **Purpose**: Fetch details of the authenticated user's wallet. Returns 404 Not Found if the wallet is not yet initialized/activated.
+* **Response (200 OK)**:
+  ```json
+  {
+    "success": true,
+    "message": "Wallet details retrieved successfully.",
+    "data": {
+      "id": "wal-uuid-1234",
+      "username": "jane_doe",
+      "ownerName": "Jane Doe",
+      "balance": 1500.00,
+      "formattedBalance": "₹1,500.00",
+      "currency": "INR",
+      "active": true,
+      "updatedAt": "2026-05-28T16:00:00"
+    }
+  }
+  ```
+
+#### B. Initialize / Activate Wallet
+* **Endpoint**: `POST /api/v1/payflow/wallet/initialize`
+* **Purpose**: Link a bank account permanently and deposit an initial amount (must be $\ge$ ₹1,000.00).
+* **Query Parameters**:
+  - `accountId`: The UUID of the bank account to connect.
+  - `initialAmount`: The deposit amount (e.g. `1500.00`).
+* **Response (200 OK)**:
+  ```json
+  {
+    "success": true,
+    "message": "Wallet initialized and activated successfully.",
+    "data": {
+      "id": "wal-uuid-1234",
+      "username": "jane_doe",
+      "ownerName": "Jane Doe",
+      "balance": 1500.00,
+      "formattedBalance": "₹1,500.00",
+      "currency": "INR",
+      "active": true,
+      "updatedAt": "2026-05-28T16:05:00"
+    }
+  }
+  ```
+
+#### C. Recharge Wallet Balance
+* **Endpoint**: `POST /api/v1/payflow/wallet/recharge`
+* **Purpose**: Pull funds into the wallet directly from the permanently connected banking account.
+* **Query Parameters**:
+  - `amount`: The recharge amount (e.g. `2000.00`).
+* **Response (200 OK)**:
+  ```json
+  {
+    "success": true,
+    "message": "Wallet recharged successfully.",
+    "data": {
+      "id": "wal-uuid-1234",
+      "username": "jane_doe",
+      "ownerName": "Jane Doe",
+      "balance": 3500.00,
+      "formattedBalance": "₹3,500.00",
+      "currency": "INR",
+      "active": true,
+      "updatedAt": "2026-05-28T16:10:00"
+    }
+  }
+  ```
+
+#### D. Send P2P Money Instantly
+* **Endpoint**: `POST /api/v1/payflow/send`
+* **Purpose**: Instantly transfer money from the sender's wallet to the recipient's wallet, ensuring the sender's balance remains $\ge$ ₹1,000.00.
+* **Payload**:
+  ```json
+  {
+    "toUsername": "bobby_32",
+    "amount": 400.00,
+    "note": "Lunch share"
+  }
+  ```
+* **Response (200 OK)**:
+  ```json
+  {
+    "success": true,
+    "message": "Money sent successfully.",
+    "data": {
+      "id": "req-uuid-9999",
+      "fromUsername": "jane_doe",
+      "fromFullName": "Jane Doe",
+      "toUsername": "bobby_32",
+      "toFullName": "Bobby Smith",
+      "amount": 400.00,
+      "formattedAmount": "₹400.00",
+      "status": "ACCEPTED",
+      "note": "Lunch share",
+      "createdAt": "2026-05-28T16:15:00"
+    }
+  }
+  ```
+
+#### E. Request P2P Money
+* **Endpoint**: `POST /api/v1/payflow/request`
+* **Purpose**: Create a pending request for money from another registered user.
+* **Payload**:
+  ```json
+  {
+    "fromUsername": "alice_w",
+    "amount": 500.00,
+    "note": "Movie ticket split"
+  }
+  ```
+* **Response (200 OK)**:
+  ```json
+  {
+    "success": true,
+    "message": "Money requested successfully.",
+    "data": {
+      "id": "req-uuid-8888",
+      "fromUsername": "jane_doe",
+      "fromFullName": "Jane Doe",
+      "toUsername": "alice_w",
+      "toFullName": "Alice Wonder",
+      "amount": 500.00,
+      "formattedAmount": "₹500.00",
+      "status": "PENDING",
+      "note": "Movie ticket split",
+      "createdAt": "2026-05-28T16:20:00"
+    }
+  }
+  ```
+
+#### F. Approve / Accept Payment Request
+* **Endpoint**: `POST /api/v1/payflow/requests/{id}/accept`
+* **Purpose**: Accepts an incoming pending payment request, debiting the payer's wallet (must stay $\ge$ ₹1,000.00) and crediting the requestor.
+* **Response (200 OK)**:
+  ```json
+  {
+    "success": true,
+    "message": "Payment request accepted successfully.",
+    "data": {
+      "id": "req-uuid-8888",
+      "fromUsername": "jane_doe",
+      "fromFullName": "Jane Doe",
+      "toUsername": "alice_w",
+      "toFullName": "Alice Wonder",
+      "amount": 500.00,
+      "formattedAmount": "₹500.00",
+      "status": "ACCEPTED",
+      "note": "Movie ticket split",
+      "createdAt": "2026-05-28T16:20:00"
+    }
+  }
+  ```
+
+#### G. Decline Payment Request
+* **Endpoint**: `POST /api/v1/payflow/requests/{id}/decline`
+* **Purpose**: Rejects and cancels an incoming pending payment request.
+* **Response (200 OK)**:
+  ```json
+  {
+    "success": true,
+    "message": "Payment request declined successfully.",
+    "data": {
+      "id": "req-uuid-8888",
+      "fromUsername": "jane_doe",
+      "fromFullName": "Jane Doe",
+      "toUsername": "alice_w",
+      "toFullName": "Alice Wonder",
+      "amount": 500.00,
+      "formattedAmount": "₹500.00",
+      "status": "DECLINED",
+      "note": "Movie ticket split",
+      "createdAt": "2026-05-28T16:20:00"
+    }
+  }
+  ```
+

@@ -1,68 +1,76 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
 @import "tailwindcss";
 
 @theme {
   --font-sans: 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   
   --color-bg-primary: #ffffff;
-  --color-bg-secondary: #f5f5f7;
-  --color-bg-glass: rgba(255, 255, 255, 0.72);
+  --color-bg-secondary: #f6f8fb;
+  --color-bg-glass: rgba(255, 255, 255, 0.82);
   
-  --color-text-primary: #1d1d1f;
-  --color-text-secondary: #86868b;
-  --color-text-muted: #d2d2d7;
+  --color-text-primary: #0f111a;
+  --color-text-secondary: #4b5266;
+  --color-text-muted: #cbd5e1;
   
-  --color-apple-blue: #0066cc;
-  --color-border-apple: #e5e5e7;
+  --color-apple-blue: #0071e3;
+  --color-border-apple: #e2e8f0;
   
-  /* Cyber-Neon Premium Colors */
-  --color-neon-cyan: #06b6d4;
-  --color-neon-violet: #a855f7;
-  --color-neon-emerald: #10b981;
+  /* Extremely Vibrant Cyber-Neon Accent Colors */
+  --color-neon-cyan: #00f2fe;
+  --color-neon-violet: #b180ff;
+  --color-neon-emerald: #05c46b;
+  --color-neon-rose: #ff3f34;
   
-  /* Exquisite Neon Box Shadows */
-  --shadow-glow-cyan: 0 0 18px rgba(6, 182, 212, 0.15), 0 0 6px rgba(6, 182, 212, 0.08);
-  --shadow-glow-violet: 0 0 18px rgba(168, 85, 247, 0.15), 0 0 6px rgba(168, 85, 247, 0.08);
-  --shadow-glow-emerald: 0 0 18px rgba(16, 185, 129, 0.15), 0 0 6px rgba(16, 185, 129, 0.08);
-  --shadow-glow-dark: 0 0 20px rgba(0, 0, 0, 0.03);
+  /* Rich, Friendly Glow Box Shadows (Pops elegantly) */
+  --shadow-glow-cyan: 0 0 25px rgba(0, 242, 254, 0.22), 0 0 10px rgba(0, 242, 254, 0.1);
+  --shadow-glow-violet: 0 0 25px rgba(177, 128, 255, 0.22), 0 0 10px rgba(177, 128, 255, 0.1);
+  --shadow-glow-emerald: 0 0 25px rgba(5, 196, 107, 0.22), 0 0 10px rgba(5, 196, 107, 0.1);
+  --shadow-glow-dark: 0 10px 30px rgba(15, 17, 26, 0.06);
 }
 
 @media (prefers-color-scheme: dark) {
   @theme {
-    --color-bg-primary: #050506;
-    --color-bg-secondary: #0d0d0f;
-    --color-bg-glass: rgba(5, 5, 6, 0.75);
+    /* Highly Saturated Friendly Indigo-Midnight Backing */
+    --color-bg-primary: #05070f;
+    --color-bg-secondary: #0d1022;
+    --color-bg-glass: rgba(5, 7, 15, 0.85);
     
-    --color-text-primary: #f5f5f7;
-    --color-text-secondary: #86868b;
-    --color-text-muted: #333336;
+    --color-text-primary: #f8fafc;
+    --color-text-secondary: #94a3b8;
+    --color-text-muted: #1e293b;
     
     --color-apple-blue: #2997ff;
-    --color-border-apple: #222225;
+    --color-border-apple: #1e293b;
     
-    /* Cyber-Neon Dark Glows */
-    --shadow-glow-cyan: 0 0 25px rgba(6, 182, 212, 0.22), 0 0 10px rgba(6, 182, 212, 0.12);
-    --shadow-glow-violet: 0 0 25px rgba(168, 85, 247, 0.22), 0 0 10px rgba(168, 85, 247, 0.12);
-    --shadow-glow-emerald: 0 0 25px rgba(16, 185, 129, 0.22), 0 0 10px rgba(16, 185, 129, 0.12);
-    --shadow-glow-dark: 0 0 20px rgba(255, 255, 255, 0.01);
+    /* Cyber-Neon Dark Glows (Vibrant) */
+    --shadow-glow-cyan: 0 0 35px rgba(0, 242, 254, 0.35), 0 0 15px rgba(0, 242, 254, 0.2);
+    --shadow-glow-violet: 0 0 35px rgba(177, 128, 255, 0.35), 0 0 15px rgba(177, 128, 255, 0.2);
+    --shadow-glow-emerald: 0 0 35px rgba(5, 196, 107, 0.35), 0 0 15px rgba(5, 196, 107, 0.2);
+    --shadow-glow-dark: 0 10px 30px rgba(0, 0, 0, 0.4);
   }
 }
 
 @layer base {
   body {
-    @apply font-sans bg-bg-primary text-text-primary antialiased selection:bg-apple-blue selection:text-white transition-colors duration-300;
-    letter-spacing: -0.011em;
+    @apply font-sans text-text-primary antialiased selection:bg-apple-blue selection:text-white transition-colors duration-300;
+    letter-spacing: -0.015em;
+    background-image: radial-gradient(circle at 15% 15%, rgba(0, 242, 254, 0.06) 0%, transparent 45%), 
+                      radial-gradient(circle at 85% 85%, rgba(177, 128, 255, 0.07) 0%, transparent 45%),
+                      linear-gradient(135deg, #f0f4f8 0%, #ffffff 100%);
+    background-attachment: fixed;
+    background-size: cover;
+    min-height: 100vh;
   }
   
   /* Custom Scrollbar Styles */
   ::-webkit-scrollbar {
-    @apply w-[6px] h-[6px];
+    @apply w-[8px] h-[8px];
   }
   ::-webkit-scrollbar-track {
     @apply bg-transparent;
   }
   ::-webkit-scrollbar-thumb {
-    @apply bg-zinc-200 dark:bg-zinc-800 rounded-sm;
+    @apply bg-zinc-200 dark:bg-zinc-800 rounded-md;
     background-color: var(--color-border-apple, #e5e5e7);
   }
   ::-webkit-scrollbar-thumb:hover {
@@ -83,12 +91,12 @@
 }
 
 @keyframes slideInUp {
-  from { opacity: 0; transform: translateY(12px); }
+  from { opacity: 0; transform: translateY(16px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes slideInLeft {
-  from { opacity: 0; transform: translateX(-24px); }
+  from { opacity: 0; transform: translateX(-32px); }
   to { opacity: 1; transform: translateX(0); }
 }
 
@@ -97,7 +105,7 @@
 }
 
 .animate-slide-in-up {
-  animation: slideInUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: slideInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .animate-glow-pulse {
@@ -105,5 +113,5 @@
 }
 
 .animate-slide-left {
-  animation: slideInLeft 0.35s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+  animation: slideInLeft 0.4s cubic-bezier(0.25, 1, 0.5, 1) forwards;
 }
