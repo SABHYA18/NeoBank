@@ -12,9 +12,16 @@ import com.neobank.payflow.dto.*;
 import com.neobank.payflow.model.PayFlowRequest;
 import com.neobank.payflow.model.RequestStatus;
 import com.neobank.payflow.model.Wallet;
+import com.neobank.payflow.model.PayFlowPayment;
+import com.neobank.payflow.model.PaymentStatus;
+import com.neobank.payflow.repository.PayFlowPaymentRepository;
 import com.neobank.payflow.repository.PayFlowRequestRepository;
 import com.neobank.payflow.repository.WalletRepository;
 import com.neobank.payflow.service.WalletService;
+import com.neobank.payflow.strategy.WalletStrategy;
+import com.neobank.payflow.strategy.WalletStrategyFactory;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -37,6 +44,9 @@ public class WalletServiceImpl implements WalletService {
 
     private final WalletRepository walletRepository;
     private final PayFlowRequestRepository payFlowRequestRepository;
+    private final PayFlowPaymentRepository payFlowPaymentRepository;
+    private final WalletStrategyFactory walletStrategyFactory;
+    private final ObjectMapper objectMapper;
     private final UserRepository userRepository;
     private final AccountRepository accountRepository;
     private final AccountService accountService;
@@ -339,6 +349,60 @@ public class WalletServiceImpl implements WalletService {
         return "neobank://payflow/pay?username=" + user.getUsername() + "&fullName=" + user.getFullName().replace(" ", "%20");
     }
 
+    @Override
+    @Transactional
+    public WalletPaymentResponse payWithStrategy(User user, WalletPaymentRequest request) {
+        if (request.getAmount().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new AppException("Amount must be greater than zero.", HttpStatus.BAD_REQUEST);
+        }
+
+        Wallet wallet = walletRepository.findByUserId(user.getId())
+                .orElseThrow(() -> new AppException("Wallet not initialized.", HttpStatus.BAD_REQUEST));
+
+        if (!wallet.isActive()) {
+            throw new AppException("Wallet is inactive.", HttpStatus.BAD_REQUEST);
+        }
+
+        BigDecimal resultingBalance = wallet.getBalance().subtract(request.getAmount());
+        if (resultingBalance.compareTo(MIN_BALANCE) < 0) {
+            throw new AppException("Payment rejected. Wallet balance cannot drop below ₹1,000.00.", HttpStatus.BAD_REQUEST);
+        }
+
+        WalletStrategy strategy = walletStrategyFactory.resolve(request.getType());
+        strategy.validate(request);
+        String referenceNumber = strategy.execute(request);
+
+        try {
+            wallet.setBalance(resultingBalance);
+            walletRepository.save(wallet);
+
+            PayFlowPayment payment = PayFlowPayment.builder()
+                    .user(user)
+                    .type(request.getType())
+                    .amount(request.getAmount())
+                    .status(PaymentStatus.CONFIRMED)
+                    .referenceNumber(referenceNumber)
+                    .metadataJson(objectMapper.writeValueAsString(request.getMetadata()))
+                    .build();
+
+            payment = payFlowPaymentRepository.save(payment);
+            log.info("Wallet {} payment confirmed for user {}. Ref: {}", request.getType(), user.getUsername(), referenceNumber);
+            return mapToPaymentResponse(payment);
+        } catch (ObjectOptimisticLockingFailureException e) {
+            throw new AppException("Concurrent update detected during wallet payment. Please try again.", HttpStatus.CONFLICT);
+        } catch (JsonProcessingException e) {
+            throw new AppException("Invalid payment metadata.", HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<WalletPaymentResponse> getPaymentHistory(User user) {
+        return payFlowPaymentRepository.findByUserIdOrderByCreatedAtDesc(user.getId()).stream()
+                .map(this::mapToPaymentResponse)
+                .collect(Collectors.toList());
+    }
+
     // ─── Mapper Helpers ───────────────────────────────────────────
 
     private WalletDto mapToDto(Wallet wallet) {
@@ -366,6 +430,19 @@ public class WalletServiceImpl implements WalletService {
                 .status(request.getStatus().name())
                 .note(request.getNote())
                 .createdAt(request.getCreatedAt())
+                .build();
+    }
+
+    private WalletPaymentResponse mapToPaymentResponse(PayFlowPayment payment) {
+        return WalletPaymentResponse.builder()
+                .id(payment.getId())
+                .type(payment.getType())
+                .amount(payment.getAmount())
+                .formattedAmount(INR_FORMAT.format(payment.getAmount()))
+                .status(payment.getStatus())
+                .referenceNumber(payment.getReferenceNumber())
+                .metadataJson(payment.getMetadataJson())
+                .createdAt(payment.getCreatedAt())
                 .build();
     }
 }

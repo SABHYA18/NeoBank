@@ -29,12 +29,13 @@
 <body>
 
     <h1>NeoBank Super-App — Technical API Document</h1>
-    <p><strong>System Engine Release Baseline:</strong> 1.0.4-RELEASE</p>
+    <p><strong>System Engine Release Baseline:</strong> 1.1.0-RELEASE (June 2026)</p>
     
     <div class="meta-box">
-        <strong>Global Context Base URL:</strong> <code>https://api.neobank-superapp.local</code><br>
-        <strong>Authorization Security Pattern:</strong> Standard JSON Web Token (JJWT Bearer Scheme attached via <code>Authorization</code> header)<br>
-        <strong>Database Mutative Safeguard:</strong> Optimistic Version checking locks combined with explicit unique transactional tracking keys.
+        <strong>Local Base URL:</strong> <code>http://localhost:8081</code><br>
+        <strong>Swagger UI:</strong> <code>http://localhost:8081/swagger-ui.html</code><br>
+        <strong>Authorization:</strong> JWT Bearer via <code>Authorization</code> header<br>
+        <strong>Safeguards:</strong> Idempotency keys, optimistic locking, wallet ₹1,000 floor
     </div>
 
     <h2>🔐 1. Authentication Layer (Public Endpoints)</h2>
@@ -179,6 +180,102 @@
             <span class="method post">POST</span><span class="path">/api/v1/payflow/requests/{id}/decline</span>
         </div>
         <div class="desc">Cancels, drops, and marks a pending inbound billing tracking item payload as <code>DECLINED</code>.</div>
+    </div>
+
+    <div class="endpoint">
+        <div class="endpoint-header">
+            <span class="method get">GET</span><span class="path">/api/v1/payflow/requests</span>
+        </div>
+        <div class="desc">Returns the P2P activity feed (sent/received requests).</div>
+    </div>
+
+    <div class="endpoint">
+        <div class="endpoint-header">
+            <span class="method get">GET</span><span class="path">/api/v1/payflow/qrcode</span>
+        </div>
+        <div class="desc">Generates a QR payment URI payload for the authenticated user.</div>
+    </div>
+
+    <div class="endpoint">
+        <div class="endpoint-header">
+            <span class="method post">POST</span><span class="path">/api/v1/payflow/pay</span>
+        </div>
+        <div class="desc">Unified wallet payment via strategy framework (BOOKING, BILL, RECHARGE). Enforces ₹1,000 balance floor.</div>
+        <h3>Example Request Payload</h3>
+<pre>{
+  "type": "RECHARGE",
+  "amount": 299.00,
+  "metadata": {
+    "operator": "JIO",
+    "mobileNumber": "9876543210"
+  }
+}</pre>
+    </div>
+
+    <div class="endpoint">
+        <div class="endpoint-header">
+            <span class="method get">GET</span><span class="path">/api/v1/payflow/payments</span>
+        </div>
+        <div class="desc">Lists wallet service payment history for the authenticated user.</div>
+    </div>
+
+    <h2>👤 5. User Profile Layer (JWT Required)</h2>
+
+    <div class="endpoint">
+        <div class="endpoint-header">
+            <span class="method get">GET</span><span class="path">/api/v1/users/me</span>
+        </div>
+        <div class="desc">Returns the authenticated user's profile (email, username, fullName, phone, role, active).</div>
+    </div>
+
+    <h2>📊 6. ClearLedger Module (JWT Required)</h2>
+
+    <div class="endpoint">
+        <div class="endpoint-header">
+            <span class="method post">POST</span><span class="path">/api/v1/clearledger/expenses</span>
+        </div>
+        <div class="desc">Logs an expense by category and date.</div>
+        <h3>Example Request Payload</h3>
+<pre>{
+  "amount": 450.00,
+  "category": "FOOD",
+  "description": "Team lunch",
+  "expenseDate": "2026-06-03"
+}</pre>
+    </div>
+
+    <div class="endpoint">
+        <div class="endpoint-header">
+            <span class="method get">GET</span><span class="path">/api/v1/clearledger/expenses</span>
+        </div>
+        <div class="desc">Lists expenses. Optional query: <code>category</code>, <code>fromDate</code>, <code>toDate</code>.</div>
+    </div>
+
+    <div class="endpoint">
+        <div class="endpoint-header">
+            <span class="method post">POST</span><span class="path">/api/v1/clearledger/budgets</span>
+        </div>
+        <div class="desc">Creates or updates a category budget (WEEKLY or MONTHLY).</div>
+        <h3>Example Request Payload</h3>
+<pre>{
+  "category": "FOOD",
+  "limitAmount": 5000.00,
+  "period": "MONTHLY"
+}</pre>
+    </div>
+
+    <div class="endpoint">
+        <div class="endpoint-header">
+            <span class="method get">GET</span><span class="path">/api/v1/clearledger/budgets</span>
+        </div>
+        <div class="desc">Lists budgets with spent and remaining amounts for the current period.</div>
+    </div>
+
+    <div class="endpoint">
+        <div class="endpoint-header">
+            <span class="method get">GET</span><span class="path">/api/v1/clearledger/analytics</span>
+        </div>
+        <div class="desc">Returns total spend and category breakdown. Optional: <code>fromDate</code>, <code>toDate</code>.</div>
     </div>
 
 </body>

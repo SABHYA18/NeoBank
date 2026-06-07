@@ -79,69 +79,65 @@ neobank/
 
 ## Build Phases
 
-### ✅ Phase 1 — Core Backend (Start Here)
+### ✅ Phase 1 — Core Backend (Complete)
 > Build the skeleton + auth + core banking
 
-- [ ] Spring Boot project setup (Maven, dependencies)
-- [ ] H2 local database configuration
-- [ ] User entity + repository
-- [ ] Auth module: `POST /auth/signup`, `POST /auth/login`
-- [ ] JWT generation, validation, refresh tokens
-- [ ] Spring Security filter chain
-- [ ] Role-based access: `CUSTOMER`, `ADMIN`
-- [ ] Account entity (checking, savings)
-- [ ] `POST /accounts` — create account
-- [ ] `GET /accounts/{id}` — get account details
-- [ ] `GET /accounts/{id}/balance` — get balance
+- [x] Spring Boot project setup (Maven, dependencies)
+- [x] H2 local database configuration (Supabase PostgreSQL active in dev)
+- [x] User entity + repository
+- [x] Auth module: `POST /auth/signup`, `POST /auth/login`
+- [x] JWT generation, validation, refresh tokens
+- [x] Spring Security filter chain
+- [x] Role-based access: `CUSTOMER`, `ADMIN`
+- [x] Account entity (checking, savings)
+- [x] `POST /accounts` — create account
+- [x] `GET /accounts/{id}` — get account details
+- [x] `GET /accounts/{id}/balance` — get balance
 
-### Phase 2 — Transactions
-- [ ] Transaction entity (ledger-based: debit/credit entries)
-- [ ] `POST /transactions/deposit`
-- [ ] `POST /transactions/withdraw`
-- [ ] `POST /transactions/transfer`
-- [ ] Transaction history with filters (date, type, amount)
-- [ ] Idempotency keys to prevent duplicate transactions
-- [ ] Balance validation & rollback on failure
+### ✅ Phase 2 — Transactions (Complete)
+- [x] Transaction entity (ledger-based: debit/credit entries)
+- [x] `POST /transactions/deposit`
+- [x] `POST /transactions/withdraw`
+- [x] `POST /transactions/transfer`
+- [x] Transaction history with filters (date, type, amount)
+- [x] Idempotency keys to prevent duplicate transactions
+- [x] Balance validation & rollback on failure
 
-### Phase 3 — PayFlow Module & Generic Wallet Strategy Framework
-- [ ] PayFlow wallet (linked to user account)
-- [ ] `POST /payflow/send` — send money by username/email
-- [ ] `POST /payflow/request` — request money from a user
-- [ ] `GET /payflow/feed` — activity feed
-- [ ] Accept/decline payment requests
-- [ ] QR code generation for payments
-- [ ] Generic Wallet Strategy Framework skeleton (`WalletStrategy`, `WalletStrategyFactory`, `WalletStrategyContext`)
-- [ ] Concrete strategies for wallet money usage:
-  - `BookingWalletStrategy` (for airline, movie, or transportation bookings)
-  - `BillPaymentWalletStrategy` (for electricity, water, internet bill payments)
-  - `RechargeWalletStrategy` (for mobile or network operator recharges)
-- [ ] `POST /payflow/pay` — unified endpoint to make any wallet payment/service usage using the strategy framework
-- [ ] `GET /payflow/payments` — list wallet transaction/payment history
+### ✅ Phase 3 — PayFlow Module & Wallet Strategy Framework (Complete)
+- [x] PayFlow wallet (linked to user account)
+- [x] `POST /payflow/send` — send money by username/email
+- [x] `POST /payflow/request` — request money from a user
+- [x] `GET /payflow/requests` — activity feed
+- [x] Accept/decline payment requests
+- [x] QR code generation for payments
+- [x] Wallet Strategy Framework (`WalletStrategy`, `WalletStrategyFactory`)
+- [x] `BookingWalletStrategy`, `BillPaymentWalletStrategy`, `RechargeWalletStrategy`
+- [x] `POST /payflow/pay` — unified strategy endpoint
+- [x] `GET /payflow/payments` — wallet payment history
 
-### Phase 4 — ClearLedger Module
-- [ ] Expense categories (food, travel, utilities, etc.)
-- [ ] `POST /clearledger/expenses` — log an expense
-- [ ] `GET /clearledger/expenses` — list with filters
-- [ ] Budget setup per category
-- [ ] Group expenses (split with other users)
-- [ ] Spending analytics endpoint
+### ✅ Phase 4 — ClearLedger Module (Complete)
+- [x] Expense categories (food, travel, utilities, etc.)
+- [x] `POST /clearledger/expenses` — log an expense
+- [x] `GET /clearledger/expenses` — list with filters
+- [x] Budget setup per category
+- [ ] Group expenses (split with other users) — future
+- [x] Spending analytics endpoint
 
-### Phase 5 — Frontend (Strictly Minimalist)
-- [ ] React + Vite setup with TypeScript (clean typography, generous whitespace)
-- [ ] Auth pages (Login, Signup)
-- [ ] Dashboard (balances, recent transactions)
-- [ ] Accounts page
-- [ ] Transaction history table
-- [ ] PayFlow UI (Dynamic wallet section showing Send, Request, QR, and dedicated Booking/Bills/Recharges portals built on a unified payment interface)
-- [ ] ClearLedger UI (expense tracker, budgets)
-> [!NOTE]
-> **Minimalist Design Principle**: All UI pages, components, and views must adopt a strictly clean, premium, and minimal design. Use a high-contrast neutral palette (e.g., slate/charcoal tones, soft off-whites), modern premium sans-serif typography (e.g., Inter/Outfit), subtle micro-animations, and generous whitespace, avoiding loud or generic gradients and colors.
+### ✅ Phase 5 — Frontend (Complete)
+- [x] React + Vite setup with TypeScript
+- [x] Auth pages (Login, Signup)
+- [x] Dashboard (balances, recent transactions)
+- [x] Accounts page
+- [x] Transaction history table
+- [x] PayFlow UI (Send, Request, strategy payments, wallet card)
+- [x] ClearLedger UI (expense tracker, budgets, analytics)
+- [x] Light/dark theme, sidebar navigation, module icons, glow design
 
-### Phase 6 — Cloud & Polish
-- [ ] Switch from H2 to Supabase (PostgreSQL)
+### Phase 6 — Cloud & Polish (In Progress)
+- [x] Switch from H2 to Supabase (PostgreSQL)
 - [ ] Environment-based config (`dev` vs `prod` profiles)
-- [ ] Swagger/OpenAPI docs
-- [ ] Error handling & validation
+- [x] Swagger/OpenAPI docs
+- [x] Error handling & validation
 - [ ] Rate limiting
 
 ---

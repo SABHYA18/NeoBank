@@ -26,4 +26,8 @@ public interface WalletService {
     List<P2PResponse> getRequestsFeed(User user);
 
     String generateQrCodeString(User user);
+
+    WalletPaymentResponse payWithStrategy(User user, WalletPaymentRequest request);
+
+    List<WalletPaymentResponse> getPaymentHistory(User user);
 }

@@ -107,4 +107,21 @@ public class PayFlowController {
         String qrString = walletService.generateQrCodeString(principal.getUser());
         return ResponseEntity.ok(ApiResponse.success("QR Code payload generated.", Map.of("qrPayload", qrString)));
     }
+
+    @PostMapping("/pay")
+    @Operation(summary = "Unified wallet payment", description = "Books, bills, or recharges via strategy framework")
+    public ResponseEntity<ApiResponse<WalletPaymentResponse>> pay(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @Valid @RequestBody WalletPaymentRequest request
+    ) {
+        WalletPaymentResponse response = walletService.payWithStrategy(principal.getUser(), request);
+        return ResponseEntity.ok(ApiResponse.success("Wallet payment confirmed.", response));
+    }
+
+    @GetMapping("/payments")
+    @Operation(summary = "Wallet payment history", description = "Lists booking, bill, and recharge payments")
+    public ResponseEntity<ApiResponse<List<WalletPaymentResponse>>> getPayments(@AuthenticationPrincipal UserPrincipal principal) {
+        List<WalletPaymentResponse> response = walletService.getPaymentHistory(principal.getUser());
+        return ResponseEntity.ok(ApiResponse.success("Wallet payment history retrieved.", response));
+    }
 }

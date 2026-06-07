@@ -526,3 +526,91 @@ Here is the list of REST APIs in the exact order a client/frontend application c
   }
   ```
 
+#### H. Get P2P Activity Feed
+* **Endpoint**: `GET /api/v1/payflow/requests`
+* **Purpose**: List sent/received P2P requests (pending, accepted, declined).
+
+#### I. Get QR Payment Payload
+* **Endpoint**: `GET /api/v1/payflow/qrcode`
+* **Purpose**: Returns a custom URI payload for wallet payments.
+
+#### J. Unified Wallet Payment (Strategy Framework)
+* **Endpoint**: `POST /api/v1/payflow/pay`
+* **Purpose**: Pay for bookings, bills, or mobile recharges via the wallet strategy framework.
+* **Payload**:
+  ```json
+  {
+    "type": "BOOKING",
+    "amount": 850.00,
+    "metadata": {
+      "provider": "AIRLINE",
+      "bookingRef": "PNR123456"
+    }
+  }
+  ```
+* **Types & metadata**:
+  - `BOOKING` → `provider`, `bookingRef`
+  - `BILL` → `billerCode`, `consumerId`
+  - `RECHARGE` → `operator`, `mobileNumber`
+
+#### K. Wallet Payment History
+* **Endpoint**: `GET /api/v1/payflow/payments`
+* **Purpose**: List confirmed booking, bill, and recharge payments for the authenticated user.
+
+---
+
+### 👤 5. User Profile Layer (Authenticated)
+
+#### A. Get My Profile
+* **Endpoint**: `GET /api/v1/users/me`
+* **Purpose**: Returns the current user's profile (email, username, full name, phone, role, status).
+
+---
+
+### 📊 6. ClearLedger Module (Authenticated)
+
+#### A. Log Expense
+* **Endpoint**: `POST /api/v1/clearledger/expenses`
+* **Payload**:
+  ```json
+  {
+    "amount": 450.00,
+    "category": "FOOD",
+    "description": "Team lunch",
+    "expenseDate": "2026-06-03"
+  }
+  ```
+* **Categories**: `FOOD`, `TRAVEL`, `UTILITIES`, `SHOPPING`, `ENTERTAINMENT`, `OTHER`
+
+#### B. List Expenses
+* **Endpoint**: `GET /api/v1/clearledger/expenses`
+* **Query params (optional)**: `category`, `fromDate`, `toDate`
+
+#### C. Create / Update Budget
+* **Endpoint**: `POST /api/v1/clearledger/budgets`
+* **Payload**:
+  ```json
+  {
+    "category": "FOOD",
+    "limitAmount": 5000.00,
+    "period": "MONTHLY"
+  }
+  ```
+
+#### D. List Budgets
+* **Endpoint**: `GET /api/v1/clearledger/budgets`
+* **Purpose**: Returns budgets with spent and remaining amounts for the current period.
+
+#### E. Spending Analytics
+* **Endpoint**: `GET /api/v1/clearledger/analytics`
+* **Query params (optional)**: `fromDate`, `toDate`
+* **Purpose**: Total spend and breakdown by category.
+
+---
+
+## Base URL & Swagger
+
+- **Local base URL:** `http://localhost:8081`
+- **Swagger UI:** `http://localhost:8081/swagger-ui.html`
+- **OpenAPI JSON:** `http://localhost:8081/api-docs`
+
