@@ -6,6 +6,10 @@ import type { TabId } from './ui';
 import type { Account, LedgerEntry, Transaction } from './types';
 import { useTheme } from './useTheme';
 
+// Backend API base URL. Configurable via VITE_API_URL (see frontend/.env.local);
+// falls back to the local Spring Boot dev server.
+const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:8081';
+
 export default function App() {
   // --- AUTH STATES ---
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
@@ -234,7 +238,7 @@ export default function App() {
 
     if (isLiveMode) {
       try {
-        const res = await fetch('http://localhost:8081/api/v1/auth/login', {
+        const res = await fetch(`${API_BASE}/api/v1/auth/login`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email: loginEmail.trim(), password: loginPassword })
@@ -282,7 +286,7 @@ export default function App() {
     if (isLiveMode) {
       try {
         // Step A: Signup User
-        const signupRes = await fetch('http://localhost:8081/api/v1/auth/signup', {
+        const signupRes = await fetch(`${API_BASE}/api/v1/auth/signup`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -300,7 +304,7 @@ export default function App() {
         }
 
         // Step B: Auto-Login
-        const loginRes = await fetch('http://localhost:8081/api/v1/auth/login', {
+        const loginRes = await fetch(`${API_BASE}/api/v1/auth/login`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email: signupEmail.trim(), password: signupPassword })
@@ -312,7 +316,7 @@ export default function App() {
           setBackendStatus('CONNECTED');
 
           // Step C: Auto-Create Initial Bank Account
-          const accRes = await fetch('http://localhost:8081/api/v1/accounts', {
+          const accRes = await fetch(`${API_BASE}/api/v1/accounts`, {
             method: 'POST',
             headers: { 
               'Content-Type': 'application/json',
@@ -414,7 +418,7 @@ export default function App() {
   useEffect(() => {
     if (isLiveMode && token) {
       // 1. Fetch Accounts
-      fetch('http://localhost:8081/api/v1/accounts', {
+      fetch(`${API_BASE}/api/v1/accounts`, {
         headers: { 'Authorization': `Bearer ${token}` }
       })
       .then(res => res.json())
@@ -426,7 +430,7 @@ export default function App() {
       .catch(err => console.error("Error loading accounts:", err));
 
       // 2. Fetch Wallet
-      fetch('http://localhost:8081/api/v1/payflow/wallet', {
+      fetch(`${API_BASE}/api/v1/payflow/wallet`, {
         headers: { 'Authorization': `Bearer ${token}` }
       })
       .then(res => {
@@ -444,7 +448,7 @@ export default function App() {
       .catch(err => console.error("Error loading wallet:", err));
 
       // 3. Fetch P2P Requests Feed
-      fetch('http://localhost:8081/api/v1/payflow/requests', {
+      fetch(`${API_BASE}/api/v1/payflow/requests`, {
         headers: { 'Authorization': `Bearer ${token}` }
       })
       .then(res => res.json())
@@ -455,7 +459,7 @@ export default function App() {
       })
       .catch(err => console.error("Error loading requests:", err));
 
-      fetch('http://localhost:8081/api/v1/payflow/payments', {
+      fetch(`${API_BASE}/api/v1/payflow/payments`, {
         headers: { 'Authorization': `Bearer ${token}` }
       })
       .then(res => res.json())
@@ -463,15 +467,15 @@ export default function App() {
       .catch(err => console.error('Error loading wallet payments:', err));
 
       if (activeTab === 'clearledger') {
-        fetch('http://localhost:8081/api/v1/clearledger/expenses', {
+        fetch(`${API_BASE}/api/v1/clearledger/expenses`, {
           headers: { 'Authorization': `Bearer ${token}` }
         }).then(res => res.json()).then(json => { if (json.success) setExpenses(json.data); });
 
-        fetch('http://localhost:8081/api/v1/clearledger/budgets', {
+        fetch(`${API_BASE}/api/v1/clearledger/budgets`, {
           headers: { 'Authorization': `Bearer ${token}` }
         }).then(res => res.json()).then(json => { if (json.success) setBudgets(json.data); });
 
-        fetch('http://localhost:8081/api/v1/clearledger/analytics', {
+        fetch(`${API_BASE}/api/v1/clearledger/analytics`, {
           headers: { 'Authorization': `Bearer ${token}` }
         }).then(res => res.json()).then(json => { if (json.success) setAnalytics(json.data); });
       }
@@ -480,7 +484,7 @@ export default function App() {
 
   useEffect(() => {
     if (isLiveMode && token && activeTab === 'profile') {
-      fetch('http://localhost:8081/api/v1/users/me', {
+      fetch(`${API_BASE}/api/v1/users/me`, {
         headers: { Authorization: `Bearer ${token}` },
       })
         .then((res) => res.json())
@@ -509,7 +513,7 @@ export default function App() {
     e.preventDefault();
 
     if (isLiveMode) {
-      fetch('http://localhost:8081/api/v1/accounts', {
+      fetch(`${API_BASE}/api/v1/accounts`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -565,7 +569,7 @@ export default function App() {
     }
 
     if (isLiveMode) {
-      fetch(`http://localhost:8081/api/v1/accounts/${addBalanceAccId}/balance?balance=${newBal}`, {
+      fetch(`${API_BASE}/api/v1/accounts/${addBalanceAccId}/balance?balance=${newBal}`, {
         method: 'PUT',
         headers: { 
           'Authorization': `Bearer ${token}`
@@ -630,7 +634,7 @@ export default function App() {
         bodyPayload.accountId = activeAccId;
       }
 
-      fetch(`http://localhost:8081/api/v1/transactions/${endpoint}`, {
+      fetch(`${API_BASE}/api/v1/transactions/${endpoint}`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -643,7 +647,7 @@ export default function App() {
         if (json.success) {
           showNotification(`${txnType} completed successfully!`, 'success');
           // Reload account details
-          fetch('http://localhost:8081/api/v1/accounts', {
+          fetch(`${API_BASE}/api/v1/accounts`, {
             headers: { 'Authorization': `Bearer ${token}` }
           })
           .then(res => res.json())
@@ -896,7 +900,7 @@ export default function App() {
     }
 
     if (isLiveMode) {
-      fetch(`http://localhost:8081/api/v1/payflow/wallet/initialize?accountId=${linkAccountId}&initialAmount=${loadAmt}`, {
+      fetch(`${API_BASE}/api/v1/payflow/wallet/initialize?accountId=${linkAccountId}&initialAmount=${loadAmt}`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}` }
       })
@@ -907,7 +911,7 @@ export default function App() {
           showNotification("Wallet initialized on Live Monolith!", "success");
           
           // Re-sync accounts
-          fetch('http://localhost:8081/api/v1/accounts', {
+          fetch(`${API_BASE}/api/v1/accounts`, {
             headers: { 'Authorization': `Bearer ${token}` }
           })
           .then(res => res.json())
@@ -956,7 +960,7 @@ export default function App() {
     }
 
     if (isLiveMode) {
-      fetch(`http://localhost:8081/api/v1/payflow/wallet/recharge?amount=${loadAmt}`, {
+      fetch(`${API_BASE}/api/v1/payflow/wallet/recharge?amount=${loadAmt}`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}` }
       })
@@ -967,7 +971,7 @@ export default function App() {
           showNotification("Wallet recharge successful!", "success");
           
           // Re-sync accounts
-          fetch('http://localhost:8081/api/v1/accounts', {
+          fetch(`${API_BASE}/api/v1/accounts`, {
             headers: { 'Authorization': `Bearer ${token}` }
           })
           .then(res => res.json())
@@ -1025,7 +1029,7 @@ export default function App() {
     }
 
     if (isLiveMode) {
-      fetch('http://localhost:8081/api/v1/payflow/send', {
+      fetch(`${API_BASE}/api/v1/payflow/send`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -1043,13 +1047,13 @@ export default function App() {
           showNotification(`Money sent successfully to @${p2pToUsername}!`, "success");
           
           // Re-sync wallet & feed
-          fetch('http://localhost:8081/api/v1/payflow/wallet', {
+          fetch(`${API_BASE}/api/v1/payflow/wallet`, {
             headers: { 'Authorization': `Bearer ${token}` }
           })
           .then(res => res.json())
           .then(data => { if (data.success) setWallet(data.data); });
 
-          fetch('http://localhost:8081/api/v1/payflow/requests', {
+          fetch(`${API_BASE}/api/v1/payflow/requests`, {
             headers: { 'Authorization': `Bearer ${token}` }
           })
           .then(res => res.json())
@@ -1104,7 +1108,7 @@ export default function App() {
     }
 
     if (isLiveMode) {
-      fetch('http://localhost:8081/api/v1/payflow/request', {
+      fetch(`${API_BASE}/api/v1/payflow/request`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -1121,7 +1125,7 @@ export default function App() {
         if (json.success) {
           showNotification(`Requested ₹${amt.toLocaleString('en-IN')} from @${requestFromUsername}`, "success");
           
-          fetch('http://localhost:8081/api/v1/payflow/requests', {
+          fetch(`${API_BASE}/api/v1/payflow/requests`, {
             headers: { 'Authorization': `Bearer ${token}` }
           })
           .then(res => res.json())
@@ -1167,7 +1171,7 @@ export default function App() {
     }
 
     if (isLiveMode) {
-      fetch(`http://localhost:8081/api/v1/payflow/requests/${reqId}/accept`, {
+      fetch(`${API_BASE}/api/v1/payflow/requests/${reqId}/accept`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}` }
       })
@@ -1177,13 +1181,13 @@ export default function App() {
           showNotification("Payment request accepted and transferred!", "success");
           
           // Re-sync wallet & feed
-          fetch('http://localhost:8081/api/v1/payflow/wallet', {
+          fetch(`${API_BASE}/api/v1/payflow/wallet`, {
             headers: { 'Authorization': `Bearer ${token}` }
           })
           .then(res => res.json())
           .then(data => { if (data.success) setWallet(data.data); });
 
-          fetch('http://localhost:8081/api/v1/payflow/requests', {
+          fetch(`${API_BASE}/api/v1/payflow/requests`, {
             headers: { 'Authorization': `Bearer ${token}` }
           })
           .then(res => res.json())
@@ -1205,7 +1209,7 @@ export default function App() {
   // F. Decline Incoming request
   const handleDeclineRequest = (reqId: string) => {
     if (isLiveMode) {
-      fetch(`http://localhost:8081/api/v1/payflow/requests/${reqId}/decline`, {
+      fetch(`${API_BASE}/api/v1/payflow/requests/${reqId}/decline`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}` }
       })
@@ -1214,7 +1218,7 @@ export default function App() {
         if (json.success) {
           showNotification("Payment request declined.", "info");
           
-          fetch('http://localhost:8081/api/v1/payflow/requests', {
+          fetch(`${API_BASE}/api/v1/payflow/requests`, {
             headers: { 'Authorization': `Bearer ${token}` }
           })
           .then(res => res.json())
@@ -1248,7 +1252,7 @@ export default function App() {
     }
     const metadata = buildPayMetadata();
     if (isLiveMode) {
-      fetch('http://localhost:8081/api/v1/payflow/pay', {
+      fetch(`${API_BASE}/api/v1/payflow/pay`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ type: payType, amount, metadata }),
@@ -1297,7 +1301,7 @@ export default function App() {
       return;
     }
     if (isLiveMode) {
-      fetch('http://localhost:8081/api/v1/clearledger/expenses', {
+      fetch(`${API_BASE}/api/v1/clearledger/expenses`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ amount, category: expCategory, description: expDesc }),
@@ -1336,7 +1340,7 @@ export default function App() {
       return;
     }
     if (isLiveMode) {
-      fetch('http://localhost:8081/api/v1/clearledger/budgets', {
+      fetch(`${API_BASE}/api/v1/clearledger/budgets`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ category: budgetCategory, limitAmount: limit, period: budgetPeriod }),

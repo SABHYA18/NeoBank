@@ -1,0 +1,12 @@
+# ─── Local AI assistant context (not shared) ─────────────────
+CLAUDE.md
+
+# ─── Environment / Secrets (repo-wide safety net) ────────────
+# Per-module .gitignores also cover these; kept here so no .env.local
+# can ever be committed from any directory. Examples stay tracked.
+.env
+.env.local
+.env.*.local
+**/.env.local
+!**/.env.local.example
+!**/.env.example
