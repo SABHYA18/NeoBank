@@ -1,3 +1,4 @@
+import { useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import {
   IconAccount,
@@ -5,13 +6,17 @@ import {
   IconClearLedger,
   IconLedger,
   IconLogo,
+  IconMoon,
   IconProfile,
+  IconSun,
   IconTransactions,
   IconWallet,
 } from './icons';
 import { ThemeToggle } from './ui';
 import type { TabId } from './ui';
 import type { Theme } from './useTheme';
+import { CommandPalette } from './CommandPalette';
+import type { Command } from './CommandPalette';
 
 const NAV: { id: TabId; label: string; modClass: string; Icon: typeof IconAccount }[] = [
   { id: 'dashboard', label: 'Accounts', modClass: 'nav-mod-dashboard', Icon: IconAccount },
@@ -45,11 +50,64 @@ export function AppLayout({
   onSignOut: () => void;
   children: ReactNode;
 }) {
+  const [cmdkOpen, setCmdkOpen] = useState(false);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setCmdkOpen((o) => !o);
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+
+  const commands = useMemo<Command[]>(() => {
+    const nav: Command[] = NAV.map(({ id, label, Icon }) => ({
+      id: `nav-${id}`,
+      label,
+      group: 'Navigate',
+      keywords: id,
+      icon: <Icon size={18} className="nav-icon" />,
+      run: () => onTabChange(id),
+    }));
+    const actions: Command[] = [
+      {
+        id: 'theme',
+        label: theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode',
+        group: 'Actions',
+        keywords: 'theme appearance dark light',
+        icon: theme === 'light' ? <IconMoon size={18} /> : <IconSun size={18} />,
+        run: onThemeToggle,
+      },
+      {
+        id: 'mode',
+        label: isLiveMode ? 'Switch to Simulation mode' : 'Switch to Live API mode',
+        group: 'Actions',
+        keywords: 'live simulation api backend mode',
+        icon: <IconTransactions size={18} />,
+        run: onToggleLiveMode,
+      },
+      {
+        id: 'signout',
+        label: 'Sign out',
+        group: 'Actions',
+        keywords: 'logout exit',
+        icon: <IconAuth size={18} />,
+        run: onSignOut,
+      },
+    ];
+    return [...nav, ...actions];
+  }, [theme, isLiveMode, onTabChange, onThemeToggle, onToggleLiveMode, onSignOut]);
+
   return (
     <div className="app-shell">
       <a href="#main" className="skip-link">
         Skip to content
       </a>
+
+      {cmdkOpen && <CommandPalette onClose={() => setCmdkOpen(false)} commands={commands} />}
 
       <aside className="sidebar" aria-label="Main navigation">
         <div className="sidebar-brand">
@@ -88,6 +146,15 @@ export function AppLayout({
             {NAV.find((n) => n.id === activeTab)?.label ?? 'NeoBank'}
           </p>
           <div className="topbar-actions">
+            <button
+              type="button"
+              className="cmdk-trigger"
+              onClick={() => setCmdkOpen(true)}
+              aria-label="Open command palette"
+            >
+              <span>Search</span>
+              <kbd>⌘K</kbd>
+            </button>
             <ThemeToggle theme={theme} onToggle={onThemeToggle} />
             <button
               type="button"
@@ -103,7 +170,7 @@ export function AppLayout({
           </div>
         </header>
 
-        <main id="main" className="main-content">
+        <main id="main" className="main-content" key={activeTab}>
           {children}
         </main>
 

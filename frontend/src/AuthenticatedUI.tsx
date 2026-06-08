@@ -1,5 +1,7 @@
 import type { FormEvent } from 'react';
 import { IconAccount, IconClearLedger, IconPlus, IconWallet } from './icons';
+import { AnimatedNumber } from './motion';
+import { useTilt } from './useTilt';
 import {
   EmptyState,
   Field,
@@ -13,57 +15,19 @@ import {
   Stat,
   SubmitButton,
 } from './ui';
-import type { Account, LedgerEntry, Transaction } from './types';
-
-type P2PRequest = {
-  id: string;
-  fromUsername: string;
-  toUsername: string;
-  amount: number;
-  formattedAmount?: string;
-  status: string;
-  note?: string;
-};
-
-type Wallet = { balance: number; accountNumber?: string; ownerName?: string };
-type User = { fullName?: string; username?: string; email?: string; phone?: string };
-type Profile = { email?: string; username?: string; fullName?: string; phone?: string; role?: string; active?: boolean };
-
-type WalletPayment = {
-  id: string;
-  type: string;
-  amount: number;
-  formattedAmount?: string;
-  status: string;
-  referenceNumber: string;
-};
-
-type Expense = {
-  id: string;
-  amount: number;
-  formattedAmount?: string;
-  category: string;
-  description?: string;
-  expenseDate?: string;
-};
-
-type Budget = {
-  id: string;
-  category: string;
-  limitAmount: number;
-  formattedLimit?: string;
-  spentAmount?: number;
-  formattedSpent?: string;
-  remainingAmount?: number;
-  formattedRemaining?: string;
-  period: string;
-};
-
-type Analytics = {
-  totalSpent?: number;
-  formattedTotalSpent?: string;
-  byCategory?: { category: string; amount: number; formattedAmount?: string }[];
-};
+import type {
+  Account,
+  Analytics,
+  Budget,
+  Expense,
+  LedgerEntry,
+  P2PRequest,
+  Transaction,
+  UserProfile,
+  Wallet,
+  WalletPayment,
+  User,
+} from './types';
 
 export type AuthenticatedUIProps = {
   activeTab: string;
@@ -78,7 +42,7 @@ export type AuthenticatedUIProps = {
   analytics: Analytics | null;
   currentUser: User | null;
   currentUsername: string;
-  userProfile: Profile | null;
+  userProfile: UserProfile | null;
   isLiveMode: boolean;
   totalBalance: number;
   maxReached: boolean;
@@ -165,6 +129,7 @@ export function AuthenticatedUI(props: AuthenticatedUIProps) {
   const p = props;
   const profile = p.isLiveMode && p.userProfile ? p.userProfile : p.currentUser;
   const pay = payLabels(p.payType);
+  const walletRef = useTilt<HTMLDivElement>(7);
 
   if (p.activeTab === 'dashboard') {
     return (
@@ -424,10 +389,10 @@ export function AuthenticatedUI(props: AuthenticatedUIProps) {
       <>
         <PageHeader title="Wallet" description="PayFlow — P2P, services, and recharge" />
         <div className="grid-2" style={{ marginBottom: '1.25rem' }}>
-          <div className="wallet-card">
-            <span style={{ fontSize: '0.75rem', opacity: 0.8 }}>PayFlow balance</span>
-            <div className="wallet-balance">{formatInr(p.wallet.balance)}</div>
-            <p className="text-mono" style={{ margin: '0.5rem 0 0', opacity: 0.75 }}>•••• {p.wallet.accountNumber?.slice(-4) ?? '----'}</p>
+          <div className="wallet-card" ref={walletRef}>
+            <span style={{ fontSize: '0.75rem', opacity: 0.8, letterSpacing: '0.04em', textTransform: 'uppercase' }}>PayFlow balance</span>
+            <div className="wallet-balance"><AnimatedNumber value={formatInr(p.wallet.balance)} /></div>
+            <p className="text-mono" style={{ margin: '0.75rem 0 0', opacity: 0.8, letterSpacing: '0.15em' }}>•••• •••• •••• {p.wallet.accountNumber?.slice(-4) ?? '----'}</p>
           </div>
           <Panel glow className="stack-sm">
             <SectionTitle>Recharge</SectionTitle>

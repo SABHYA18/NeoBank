@@ -1,6 +1,8 @@
 import type { ButtonHTMLAttributes, InputHTMLAttributes, ReactNode, SelectHTMLAttributes } from 'react';
 import { IconClose, IconMoon, IconSun } from './icons';
 import type { Theme } from './useTheme';
+import { AnimatedNumber } from './motion';
+import { useTilt } from './useTilt';
 
 export type TabId = 'dashboard' | 'transactions' | 'ledger' | 'wallet' | 'clearledger' | 'profile';
 
@@ -154,10 +156,13 @@ export function Modal({
 }
 
 export function Stat({ label, value }: { label: string; value: string }) {
+  const ref = useTilt<HTMLDivElement>(5);
   return (
-    <div className="metric-card">
+    <div className="metric-card" ref={ref}>
       <span className="metric-label">{label}</span>
-      <span className="metric-value">{value}</span>
+      <span className="metric-value">
+        <AnimatedNumber value={value} />
+      </span>
     </div>
   );
 }

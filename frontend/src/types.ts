@@ -34,3 +34,81 @@ export interface LedgerEntry {
   transactionReference: string;
   createdAt: string;
 }
+
+export interface User {
+  fullName?: string;
+  username?: string;
+  email?: string;
+  phone?: string;
+}
+
+export interface UserProfile extends User {
+  role?: string;
+  active?: boolean;
+  createdAt?: string;
+}
+
+/** A user in the local simulation registry — credentials plus seeded accounts. */
+export interface RegisteredUser extends User {
+  email: string;
+  username: string;
+  password: string;
+  accounts: Account[];
+}
+
+export interface Wallet {
+  balance: number;
+  accountNumber?: string;
+  /** Id of the bank account this wallet draws from (simulation). */
+  accountId?: string;
+  ownerName?: string;
+}
+
+export interface P2PRequest {
+  id: string;
+  fromUsername: string;
+  toUsername: string;
+  amount: number;
+  formattedAmount?: string;
+  status: string;
+  note?: string;
+  fromFullName?: string;
+  toFullName?: string;
+  createdAt?: string;
+}
+
+export interface WalletPayment {
+  id: string;
+  type: string;
+  amount: number;
+  formattedAmount?: string;
+  status: string;
+  referenceNumber: string;
+}
+
+export interface Expense {
+  id: string;
+  amount: number;
+  formattedAmount?: string;
+  category: string;
+  description?: string;
+  expenseDate?: string;
+}
+
+export interface Budget {
+  id: string;
+  category: string;
+  limitAmount: number;
+  formattedLimit?: string;
+  spentAmount?: number;
+  formattedSpent?: string;
+  remainingAmount?: number;
+  formattedRemaining?: string;
+  period: string;
+}
+
+export interface Analytics {
+  totalSpent?: number;
+  formattedTotalSpent?: string;
+  byCategory?: { category: string; amount: number; formattedAmount?: string }[];
+}

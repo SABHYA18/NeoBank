@@ -3,18 +3,36 @@ import { AuthenticatedUI } from './AuthenticatedUI';
 import { AuthLayout, AppLayout } from './layout';
 import { Field, Input, Modal, Select, SubmitButton, Toast } from './ui';
 import type { TabId } from './ui';
-import type { Account, LedgerEntry, Transaction } from './types';
+import type {
+  Account,
+  Analytics,
+  Budget,
+  Expense,
+  LedgerEntry,
+  P2PRequest,
+  RegisteredUser,
+  Transaction,
+  User,
+  UserProfile,
+  Wallet,
+  WalletPayment,
+} from './types';
 import { useTheme } from './useTheme';
+
+// A new transaction's request body varies by type (deposit/withdraw/transfer).
+type TransactionPayload = Record<string, string | number>;
 
 // Backend API base URL. Configurable via VITE_API_URL (see frontend/.env.local);
 // falls back to the local Spring Boot dev server.
 const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:8081';
 
+const makeIdemKey = () => 'IDEM-' + Math.random().toString(36).substring(2, 9).toUpperCase();
+
 export default function App() {
   // --- AUTH STATES ---
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [authMode, setAuthMode] = useState<'login' | 'signup'>('login');
-  const [currentUser, setCurrentUser] = useState<any | null>(null);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
 
   // Authentication Form Fields
   const [loginEmail, setLoginEmail] = useState<string>('');
@@ -28,7 +46,7 @@ export default function App() {
   const [signupInitialAccountType, setSignupInitialAccountType] = useState<'SAVINGS' | 'CHECKING'>('SAVINGS');
 
   // Local simulated registry of users
-  const [registeredUsers, setRegisteredUsers] = useState<any[]>([
+  const [registeredUsers, setRegisteredUsers] = useState<RegisteredUser[]>([
     {
       fullName: "Jane Doe",
       email: "jane@neobank.com",
@@ -63,15 +81,7 @@ export default function App() {
   // --- DASHBOARD STATES ---
   const [activeTab, setActiveTab] = useState<TabId>('dashboard');
   const { theme, toggleTheme } = useTheme();
-  const [userProfile, setUserProfile] = useState<{
-    email?: string;
-    username?: string;
-    fullName?: string;
-    phone?: string;
-    role?: string;
-    active?: boolean;
-    createdAt?: string;
-  } | null>(null);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   
   // App Mode State: Live vs Mock (simulated)
   const [isLiveMode, setIsLiveMode] = useState<boolean>(false);
@@ -91,56 +101,60 @@ export default function App() {
   const [processedIdempotencyKeys, setProcessedIdempotencyKeys] = useState<Set<string>>(new Set());
 
   // --- WALLET & P2P STATES ---
-  const [wallet, setWallet] = useState<any | null>(null);
-  const [p2pRequests, setP2pRequests] = useState<any[]>([
-    {
-      id: 'req-mock-1',
-      fromUsername: 'bobby_32',
-      fromFullName: 'Bobby Smith',
-      toUsername: 'jane_doe',
-      toFullName: 'Jane Doe',
-      amount: 450.00,
-      formattedAmount: '₹450.00',
-      status: 'PENDING',
-      note: 'Dinner share last night',
-      createdAt: new Date(Date.now() - 3600000 * 4).toISOString()
-    },
-    {
-      id: 'req-mock-2',
-      fromUsername: 'alice_w',
-      fromFullName: 'Alice Wonder',
-      toUsername: 'jane_doe',
-      toFullName: 'Jane Doe',
-      amount: 1200.00,
-      formattedAmount: '₹1,200.00',
-      status: 'PENDING',
-      note: 'Concert ticket booking refund',
-      createdAt: new Date(Date.now() - 3600000 * 12).toISOString()
-    }
-  ]);
+  const [wallet, setWallet] = useState<Wallet | null>(null);
+  // Lazy initializer keeps the relative "x hours ago" timestamps out of render.
+  const [p2pRequests, setP2pRequests] = useState<P2PRequest[]>(() => {
+    const hour = 3600000;
+    return [
+      {
+        id: 'req-mock-1',
+        fromUsername: 'bobby_32',
+        fromFullName: 'Bobby Smith',
+        toUsername: 'jane_doe',
+        toFullName: 'Jane Doe',
+        amount: 450.00,
+        formattedAmount: '₹450.00',
+        status: 'PENDING',
+        note: 'Dinner share last night',
+        createdAt: new Date(Date.now() - hour * 4).toISOString()
+      },
+      {
+        id: 'req-mock-2',
+        fromUsername: 'alice_w',
+        fromFullName: 'Alice Wonder',
+        toUsername: 'jane_doe',
+        toFullName: 'Jane Doe',
+        amount: 1200.00,
+        formattedAmount: '₹1,200.00',
+        status: 'PENDING',
+        note: 'Concert ticket booking refund',
+        createdAt: new Date(Date.now() - hour * 12).toISOString()
+      }
+    ];
+  });
 
   // JWT Token for Live Mode APIs
   const [token, setToken] = useState<string>('');
 
   // Forms Input State
-  const [newAccType, setNewAccType] = useState<'SAVINGS' | 'CHECKING'>('SAVINGS');
+  const [rawNewAccType, setNewAccType] = useState<'SAVINGS' | 'CHECKING'>('SAVINGS');
 
   // --- ADD BALANCE CUSTOM MODAL STATES ---
   const [isAddBalanceOpen, setIsAddBalanceOpen] = useState<boolean>(false);
   const [addBalanceAccId, setAddBalanceAccId] = useState<string | null>(null);
   const [addBalanceTypeName, setAddBalanceTypeName] = useState<string>('');
   const [addBalanceAmount, setAddBalanceAmount] = useState<string>('');
-  const [activeAccId, setActiveAccId] = useState<string>('acc-1');
-  
+  const [rawActiveAccId, setActiveAccId] = useState<string>('acc-1');
+
   // Transaction action forms
   const [txnType, setTxnType] = useState<'DEPOSIT' | 'WITHDRAW' | 'TRANSFER'>('TRANSFER');
   const [targetAccountNum, setTargetAccountNum] = useState<string>('');
   const [txnAmount, setTxnAmount] = useState<string>('');
   const [txnDesc, setTxnDesc] = useState<string>('');
-  const [txnIdemKey, setTxnIdemKey] = useState<string>('');
+  const [txnIdemKey, setTxnIdemKey] = useState<string>(makeIdemKey);
 
   // Wallet form inputs
-  const [linkAccountId, setLinkAccountId] = useState<string>('');
+  const [rawLinkAccountId, setLinkAccountId] = useState<string>('');
   const [initialLoadAmount, setInitialLoadAmount] = useState<string>('1500');
   const [walletRechargeAmount, setWalletRechargeAmount] = useState<string>('');
   
@@ -153,10 +167,10 @@ export default function App() {
   const [requestAmount, setRequestAmount] = useState<string>('');
   const [requestNote, setRequestNote] = useState<string>('');
 
-  const [walletPayments, setWalletPayments] = useState<any[]>([]);
-  const [expenses, setExpenses] = useState<any[]>([]);
-  const [budgets, setBudgets] = useState<any[]>([]);
-  const [analytics, setAnalytics] = useState<any | null>(null);
+  const [walletPayments, setWalletPayments] = useState<WalletPayment[]>([]);
+  const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [budgets, setBudgets] = useState<Budget[]>([]);
+  const [analytics, setAnalytics] = useState<Analytics | null>(null);
   const [payType, setPayType] = useState<'BOOKING' | 'BILL' | 'RECHARGE'>('BOOKING');
   const [payAmount, setPayAmount] = useState<string>('');
   const [payMeta1, setPayMeta1] = useState<string>('');
@@ -169,19 +183,25 @@ export default function App() {
   const [budgetPeriod, setBudgetPeriod] = useState<string>('MONTHLY');
 
   // --- REGENERATE IDEMPOTENCY KEY ---
-  const regenerateIdemKey = () => {
-    setTxnIdemKey('IDEM-' + Math.random().toString(36).substring(2, 9).toUpperCase());
+  const regenerateIdemKey = () => setTxnIdemKey(makeIdemKey());
+
+  // A fresh key per attempt: regenerate whenever the user switches transaction type.
+  const handleTxnTypeChange = (type: 'DEPOSIT' | 'WITHDRAW' | 'TRANSFER') => {
+    setTxnType(type);
+    regenerateIdemKey();
   };
 
-  useEffect(() => {
-    regenerateIdemKey();
-  }, [txnType]);
-
-  useEffect(() => {
-    if (accounts.length > 0 && !linkAccountId) {
-      setLinkAccountId(accounts[0].id);
-    }
-  }, [accounts]);
+  // Effective account selections, derived from the current accounts list so a
+  // stale or empty selection self-corrects without a syncing effect.
+  const activeAccId = accounts.some(a => a.id === rawActiveAccId)
+    ? rawActiveAccId
+    : (accounts[0]?.id ?? '');
+  const linkAccountId = rawLinkAccountId || (accounts[0]?.id ?? '');
+  const hasSavings = accounts.some(acc => acc.type === 'SAVINGS');
+  const hasChecking = accounts.some(acc => acc.type === 'CHECKING');
+  // When only one account type is missing, the form can only open that one.
+  const newAccType: 'SAVINGS' | 'CHECKING' =
+    hasSavings && !hasChecking ? 'CHECKING' : !hasSavings && hasChecking ? 'SAVINGS' : rawNewAccType;
 
   // --- SYSTEM NOTIFICATIONS (TOASTS) ---
   const showNotification = (message: string, type: 'success' | 'error' | 'info' = 'success') => {
@@ -189,24 +209,13 @@ export default function App() {
     setTimeout(() => setNotification(null), 4000);
   };
 
-  // --- AUTO SECURED LIVE MODE CONNECTIVITY MONITOR ---
-  // --- DYNAMIC SELECTOR SAFETY HOCK ---
-  useEffect(() => {
-    if (accounts.length > 0) {
-      if (!accounts.some(a => a.id === activeAccId)) {
-        setActiveAccId(accounts[0].id);
-      }
-    } else {
-      setActiveAccId('');
-    }
-  }, [accounts, activeAccId]);
-
   // --- CONNECTIVITY SWITCH ---
   const handleToggleLiveMode = () => {
     setIsLiveMode(prev => {
       const next = !prev;
       setIsAuthenticated(false);
       setCurrentUser(null);
+      setUserProfile(null);
       setToken('');
       setAccounts([]);
       setTransactions([]);
@@ -253,7 +262,7 @@ export default function App() {
         } else {
           showNotification(json.message || "Invalid credentials.", "error");
         }
-      } catch (err) {
+      } catch {
         showNotification("Backend authentication unreachable. Spring Boot running on 8081?", "error");
       }
       return;
@@ -343,7 +352,7 @@ export default function App() {
             setCurrentUser(loginJson.data.user);
           }
         }
-      } catch (err) {
+      } catch {
         showNotification("Server connectivity lost during registration.", "error");
       }
       return;
@@ -492,21 +501,8 @@ export default function App() {
           if (json.success) setUserProfile(json.data);
         })
         .catch(() => setUserProfile(null));
-    } else if (!isLiveMode) {
-      setUserProfile(null);
     }
   }, [isLiveMode, token, activeTab, currentUser]);
-
-  // Keep newAccType in sync with the first available option
-  useEffect(() => {
-    const hasSavings = accounts.some(acc => acc.type === 'SAVINGS');
-    const hasChecking = accounts.some(acc => acc.type === 'CHECKING');
-    if (hasSavings && !hasChecking) {
-      setNewAccType('CHECKING');
-    } else if (!hasSavings && hasChecking) {
-      setNewAccType('SAVINGS');
-    }
-  }, [accounts]);
 
   // --- 1. OPEN ACCOUNT ACTION ---
   const handleOpenAccount = (e: React.FormEvent) => {
@@ -621,7 +617,7 @@ export default function App() {
 
     if (isLiveMode) {
       const endpoint = txnType === 'DEPOSIT' ? 'deposit' : txnType === 'WITHDRAW' ? 'withdraw' : 'transfer';
-      const bodyPayload: any = {
+      const bodyPayload: TransactionPayload = {
         amount: amountNum,
         description: txnDesc || `${txnType} action`,
         idempotencyKey: txnIdemKey
@@ -953,6 +949,11 @@ export default function App() {
   const handleRechargeWallet = (e: React.FormEvent) => {
     e.preventDefault();
 
+    if (!wallet) {
+      showNotification("Activate your wallet before recharging.", "error");
+      return;
+    }
+
     const loadAmt = parseFloat(walletRechargeAmount);
     if (isNaN(loadAmt) || loadAmt <= 0) {
       showNotification("Enter a valid positive amount to recharge.", "error");
@@ -1002,7 +1003,7 @@ export default function App() {
     });
 
     setAccounts(updatedAccounts);
-    setWallet((prev: any) => ({ ...prev, balance: prev.balance + loadAmt }));
+    setWallet(prev => (prev ? { ...prev, balance: prev.balance + loadAmt } : prev));
     setWalletRechargeAmount('');
     showNotification(`Recharged ₹${loadAmt.toLocaleString('en-IN')} from connecting account!`, 'success');
   };
@@ -1019,6 +1020,11 @@ export default function App() {
 
     if (!p2pToUsername.trim()) {
       showNotification("Recipient username is required.", "error");
+      return;
+    }
+
+    if (!wallet) {
+      showNotification("Activate your wallet before sending money.", "error");
       return;
     }
 
@@ -1071,7 +1077,7 @@ export default function App() {
     }
 
     // Local Simulation
-    setWallet((prev: any) => ({ ...prev, balance: prev.balance - amt }));
+    setWallet(prev => (prev ? { ...prev, balance: prev.balance - amt } : prev));
     const newRequestItem = {
       id: 'req-' + Math.random().toString(36).substring(2, 9),
       fromUsername: 'jane_doe',
@@ -1165,6 +1171,10 @@ export default function App() {
 
   // E. Accept Incoming request
   const handleAcceptRequest = (reqId: string, amount: number) => {
+    if (!wallet) {
+      showNotification("Activate your wallet before accepting requests.", "error");
+      return;
+    }
     if (wallet.balance - amount < 1000) {
       showNotification("Transaction rejected. Your wallet balance cannot drop below ₹1,000.00.", "error");
       return;
@@ -1201,7 +1211,7 @@ export default function App() {
     }
 
     // Local Simulation
-    setWallet((prev: any) => ({ ...prev, balance: prev.balance - amount }));
+    setWallet(prev => (prev ? { ...prev, balance: prev.balance - amount } : prev));
     setP2pRequests(prev => prev.map(r => r.id === reqId ? { ...r, status: 'ACCEPTED' } : r));
     showNotification("Request accepted! Funds transferred instantly.", "success");
   };
@@ -1450,8 +1460,6 @@ export default function App() {
   }
 
   const totalBalance = accounts.reduce((sum, acc) => sum + (acc.balance || 0), 0);
-  const hasSavings = accounts.some(acc => acc.type === 'SAVINGS');
-  const hasChecking = accounts.some(acc => acc.type === 'CHECKING');
   const maxReached = hasSavings && hasChecking;
 
   return (
@@ -1542,7 +1550,7 @@ export default function App() {
           activeAccId={activeAccId}
           setActiveAccId={setActiveAccId}
           txnType={txnType}
-          setTxnType={setTxnType}
+          setTxnType={handleTxnTypeChange}
           targetAccountNum={targetAccountNum}
           setTargetAccountNum={setTargetAccountNum}
           txnAmount={txnAmount}
