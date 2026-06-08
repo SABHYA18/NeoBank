@@ -16,14 +16,18 @@ function format(n: number, decimals: number) {
  * prefix/suffix and Indian digit grouping. Non-numeric strings — or any value
  * under reduced-motion — render verbatim with no animation.
  */
+const NUMBER_RE = /-?[\d,]*\.?\d+/;
+
 export function AnimatedNumber({ value, className }: { value: string; className?: string }) {
-  const match = value.match(/-?[\d,]*\.?\d+/);
-  const animatable = !!match && !prefersReducedMotion();
+  const animatable = NUMBER_RE.test(value) && !prefersReducedMotion();
 
   const [display, setDisplay] = useState(value);
   const fromRef = useRef(0);
 
+  // Re-parse from `value` inside the effect so the dependency is a stable
+  // string, not a fresh RegExp match array (which would restart every render).
   useEffect(() => {
+    const match = value.match(NUMBER_RE);
     if (!match || prefersReducedMotion()) return;
 
     const target = parseFloat(match[0].replace(/,/g, ''));
@@ -47,7 +51,7 @@ export function AnimatedNumber({ value, className }: { value: string; className?
 
     raf = requestAnimationFrame(step);
     return () => cancelAnimationFrame(raf);
-  }, [value, match]);
+  }, [value]);
 
   // Static values (non-numeric, or reduced-motion) render the prop directly.
   return (
